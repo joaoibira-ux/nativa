@@ -37,6 +37,27 @@ db.exec(`
     valor REAL DEFAULT 0,
     estoque REAL DEFAULT 0
   );
+
+  CREATE TABLE IF NOT EXISTS pedidos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_id INTEGER,
+    cliente_nome TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Pendente',
+    total REAL DEFAULT 0,
+    observacoes TEXT,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS pedido_itens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pedido_id INTEGER NOT NULL,
+    produto_id INTEGER,
+    produto_nome TEXT NOT NULL,
+    ud TEXT,
+    valor_unitario REAL DEFAULT 0,
+    quantidade REAL DEFAULT 0,
+    subtotal REAL DEFAULT 0
+  );
 `);
 
 const MIME = {
@@ -163,6 +184,93 @@ function excluirEstoque(res, tabela, id) {
   res.writeHead(204).end();
 }
 
+// ---------- Pedidos ----------
+function listarPedidos(res) {
+  const pedidos = db.prepare("SELECT * FROM pedidos ORDER BY id DESC").all();
+  const itensStmt = db.prepare("SELECT * FROM pedido_itens WHERE pedido_id = ?");
+  pedidos.forEach(p => p.itens = itensStmt.all(p.id));
+  enviarJson(res, 200, pedidos);
+}
+
+function criarPedido(res, body) {
+  const { cliente_id, observacoes, itens } = body;
+  if (!cliente_id) return enviarJson(res, 400, { erro: "Cliente é obrigatório" });
+  if (!Array.isArray(itens) || itens.length === 0) {
+    return enviarJson(res, 400, { erro: "Inclua ao menos um item" });
+  }
+
+  const cliente = db.prepare("SELECT * FROM clientes WHERE id = ?").get(cliente_id);
+  if (!cliente) return enviarJson(res, 400, { erro: "Cliente não encontrado" });
+
+  try {
+    db.exec("BEGIN");
+
+    let total = 0;
+    const itensParaInserir = itens.map(item => {
+      const produto = db.prepare("SELECT * FROM produtos WHERE id = ?").get(item.produto_id);
+      if (!produto) throw new Error("Produto não encontrado");
+      const quantidade = Number(item.quantidade) || 0;
+      const subtotal = produto.valor * quantidade;
+      total += subtotal;
+      return {
+        produto_id: produto.id,
+        produto_nome: produto.nome,
+        ud: produto.ud,
+        valor_unitario: produto.valor,
+        quantidade,
+        subtotal
+      };
+    });
+
+    const infoPedido = db.prepare(`
+      INSERT INTO pedidos (cliente_id, cliente_nome, status, total, observacoes)
+      VALUES (?, ?, 'Pendente', ?, ?)
+    `).run(cliente_id, cliente.nome, total, observacoes || null);
+
+    const pedidoId = infoPedido.lastInsertRowid;
+    const inserirItem = db.prepare(`
+      INSERT INTO pedido_itens (pedido_id, produto_id, produto_nome, ud, valor_unitario, quantidade, subtotal)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const baixarEstoque = db.prepare("UPDATE produtos SET estoque = estoque - ? WHERE id = ?");
+
+    itensParaInserir.forEach(item => {
+      inserirItem.run(pedidoId, item.produto_id, item.produto_nome, item.ud, item.valor_unitario, item.quantidade, item.subtotal);
+      baixarEstoque.run(item.quantidade, item.produto_id);
+    });
+
+    db.exec("COMMIT");
+
+    const pedido = db.prepare("SELECT * FROM pedidos WHERE id = ?").get(pedidoId);
+    pedido.itens = db.prepare("SELECT * FROM pedido_itens WHERE pedido_id = ?").all(pedidoId);
+    enviarJson(res, 201, pedido);
+  } catch (e) {
+    db.exec("ROLLBACK");
+    enviarJson(res, 400, { erro: e.message });
+  }
+}
+
+function atualizarStatusPedido(res, id, body) {
+  const { status } = body;
+  if (!status) return enviarJson(res, 400, { erro: "Status é obrigatório" });
+  db.prepare("UPDATE pedidos SET status = ? WHERE id = ?").run(status, id);
+  const row = db.prepare("SELECT * FROM pedidos WHERE id = ?").get(id);
+  if (!row) return enviarJson(res, 404, { erro: "Pedido não encontrado" });
+  row.itens = db.prepare("SELECT * FROM pedido_itens WHERE pedido_id = ?").all(id);
+  enviarJson(res, 200, row);
+}
+
+function excluirPedido(res, id) {
+  db.exec("BEGIN");
+  const itens = db.prepare("SELECT * FROM pedido_itens WHERE pedido_id = ?").all(id);
+  const devolverEstoque = db.prepare("UPDATE produtos SET estoque = estoque + ? WHERE id = ?");
+  itens.forEach(item => devolverEstoque.run(item.quantidade, item.produto_id));
+  db.prepare("DELETE FROM pedido_itens WHERE pedido_id = ?").run(id);
+  db.prepare("DELETE FROM pedidos WHERE id = ?").run(id);
+  db.exec("COMMIT");
+  res.writeHead(204).end();
+}
+
 const server = http.createServer(async (req, res) => {
   const urlPath = req.url.split("?")[0];
   const partes = urlPath.split("/").filter(Boolean); // ex: ["api", "clientes", "1"]
@@ -197,6 +305,13 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && !id) return criarEstoque(res, recurso, body);
     if (req.method === "PUT" && id) return atualizarEstoque(res, recurso, id, body);
     if (req.method === "DELETE" && id) return excluirEstoque(res, recurso, id);
+  }
+
+  if (recurso === "pedidos") {
+    if (req.method === "GET" && !id) return listarPedidos(res);
+    if (req.method === "POST" && !id) return criarPedido(res, body);
+    if (req.method === "PUT" && id) return atualizarStatusPedido(res, id, body);
+    if (req.method === "DELETE" && id) return excluirPedido(res, id);
   }
 
   enviarJson(res, 404, { erro: "Rota não encontrada" });

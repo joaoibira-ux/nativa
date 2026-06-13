@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Produtos" />
-  <title>NATIVA - Produtos</title>
+  <meta name="apple-mobile-web-app-title" content="Pedidos" />
+  <title>NATIVA - Pedidos</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./style.css?v=2" />
 </head>
@@ -14,7 +14,7 @@
 
 <header>
   <a class="btn-voltar-header" href="./menu.html">← Menu</a>
-  <span class="titulo">Produtos</span>
+  <span class="titulo">Pedidos</span>
   <span id="versao-app" class="header-versao"></span>
 </header>
 
@@ -26,35 +26,31 @@
     <form id="form" novalidate>
       <div class="form-row">
         <div class="form-group full">
-          <label>Nome *</label>
-          <input type="text" id="f-nome" placeholder="Nome do produto" />
+          <label>Cliente *</label>
+          <select id="f-cliente"></select>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>UD</label>
-          <input type="text" id="f-ud" placeholder="UN, KG, M²..." />
-        </div>
-        <div class="form-group">
-          <label>Valor (R$)</label>
-          <input type="text" inputmode="decimal" id="f-valor" placeholder="0,00" />
-        </div>
-      </div>
+
+      <div id="itens-container"></div>
+      <button type="button" class="btn-add-item" onclick="adicionarItem()">+ Adicionar item</button>
+      <div class="form-total" id="form-total">Total: R$ 0,00</div>
+
       <div class="form-row">
         <div class="form-group full">
-          <label>Estoque</label>
-          <input type="number" step="any" id="f-estoque" placeholder="0" />
+          <label>Observações</label>
+          <textarea id="f-obs" rows="2" placeholder="Opcional"></textarea>
         </div>
       </div>
+
       <div class="form-actions">
         <button type="button" class="btn-cancel" onclick="fecharFormulario()">Cancelar</button>
-        <button type="button" class="btn-save" onclick="salvarItem()">Salvar</button>
+        <button type="button" class="btn-save" onclick="salvarPedido()">Salvar</button>
       </div>
     </form>
   </div>
 </div>
 
 <script src="./app.js?v=2"></script>
-<script src="./estoque.js?v=1" data-api="produtos"></script>
+<script src="./pedidos.js?v=1"></script>
 </body>
 </html>
