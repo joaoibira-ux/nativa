@@ -23,7 +23,8 @@ No iPhone, abra o endereço de rede no Safari e use "Adicionar à Tela de Iníci
   - `menu.html` - menu com acesso aos módulos
   - `clientes.html` / `clientes.js` - cadastro de clientes (com captura de localização)
   - `materiaprima.html`, `produtos.html` / `estoque.js` - cadastro de matéria-prima e produtos
+  - `pedidos.html` / `pedidos.js` - pedidos (cliente + itens + status), debita/devolve estoque de produtos
 
 ## Logo da tela de abertura
 
-Coloque o arquivo `logo.png` em `public/logo.png`.
+`public/logonativa.png` (ícone do app e imagem da tela de abertura).

@@ -1,4 +1,4 @@
-const VERSION = "nativa-v2";
+const VERSION = "nativa-v3";
 const ASSETS = [
   "./index.html",
   "./menu.html",
@@ -7,11 +7,12 @@ const ASSETS = [
   "./produtos.html",
   "./pedidos.html",
   "./style.css?v=2",
-  "./app.js?v=2",
+  "./app.js?v=3",
   "./clientes.js?v=1",
   "./estoque.js?v=1",
   "./pedidos.js?v=1",
-  "./manifest.json"
+  "./manifest.json",
+  "./logonativa.png"
 ];
 
 self.addEventListener("install", e => {
