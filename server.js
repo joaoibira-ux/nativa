@@ -60,6 +60,17 @@ db.exec(`
   );
 `);
 
+function garantirColuna(tabela, coluna, definicao) {
+  const colunas = db.prepare(`PRAGMA table_info(${tabela})`).all();
+  if (!colunas.some(c => c.name === coluna)) {
+    db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${definicao}`);
+  }
+}
+
+garantirColuna("materiaprima", "pacote", "REAL");
+garantirColuna("materiaprima", "peso_pacote", "REAL");
+garantirColuna("materiaprima", "preco_pacote", "REAL");
+
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -159,21 +170,34 @@ function listarEstoque(res, tabela) {
 }
 
 function criarEstoque(res, tabela, body) {
-  const { nome, ud, valor, estoque } = body;
+  const { nome, ud, valor, estoque, pacote, peso_pacote, preco_pacote } = body;
   if (!nome) return enviarJson(res, 400, { erro: "Nome é obrigatório" });
-  const info = db.prepare(`
-    INSERT INTO ${tabela} (nome, ud, valor, estoque) VALUES (?, ?, ?, ?)
-  `).run(nome, ud || null, valor ?? 0, estoque ?? 0);
+  let info;
+  if (tabela === "materiaprima") {
+    info = db.prepare(`
+      INSERT INTO materiaprima (nome, ud, valor, estoque, pacote, peso_pacote, preco_pacote) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(nome, ud || null, valor ?? 0, estoque ?? 0, pacote ?? null, peso_pacote ?? null, preco_pacote ?? null);
+  } else {
+    info = db.prepare(`
+      INSERT INTO ${tabela} (nome, ud, valor, estoque) VALUES (?, ?, ?, ?)
+    `).run(nome, ud || null, valor ?? 0, estoque ?? 0);
+  }
   const row = db.prepare(`SELECT * FROM ${tabela} WHERE id = ?`).get(info.lastInsertRowid);
   enviarJson(res, 201, row);
 }
 
 function atualizarEstoque(res, tabela, id, body) {
-  const { nome, ud, valor, estoque } = body;
+  const { nome, ud, valor, estoque, pacote, peso_pacote, preco_pacote } = body;
   if (!nome) return enviarJson(res, 400, { erro: "Nome é obrigatório" });
-  db.prepare(`
-    UPDATE ${tabela} SET nome = ?, ud = ?, valor = ?, estoque = ? WHERE id = ?
-  `).run(nome, ud || null, valor ?? 0, estoque ?? 0, id);
+  if (tabela === "materiaprima") {
+    db.prepare(`
+      UPDATE materiaprima SET nome = ?, ud = ?, valor = ?, estoque = ?, pacote = ?, peso_pacote = ?, preco_pacote = ? WHERE id = ?
+    `).run(nome, ud || null, valor ?? 0, estoque ?? 0, pacote ?? null, peso_pacote ?? null, preco_pacote ?? null, id);
+  } else {
+    db.prepare(`
+      UPDATE ${tabela} SET nome = ?, ud = ?, valor = ?, estoque = ? WHERE id = ?
+    `).run(nome, ud || null, valor ?? 0, estoque ?? 0, id);
+  }
   const row = db.prepare(`SELECT * FROM ${tabela} WHERE id = ?`).get(id);
   if (!row) return enviarJson(res, 404, { erro: "Registro não encontrado" });
   enviarJson(res, 200, row);

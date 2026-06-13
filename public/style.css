@@ -366,6 +366,11 @@ header .titulo { flex: 1; }
 
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #1a3322; }
 
+.form-group input[readonly] {
+  background: #f0f0f0;
+  color: #555;
+}
+
 .btn-localizacao {
   grid-column: 1 / -1;
   padding: 10px;
