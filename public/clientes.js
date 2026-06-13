@@ -61,7 +61,20 @@ function abrirFormulario(id) {
     document.getElementById("form").reset();
   }
 
+  atualizarBotaoRemoverLocalizacao();
   document.getElementById("form-overlay").style.display = "flex";
+}
+
+function atualizarBotaoRemoverLocalizacao() {
+  const btn = document.getElementById("btn-remover-localizacao");
+  btn.style.display = (latAtual != null && lngAtual != null) ? "" : "none";
+}
+
+function removerLocalizacao() {
+  latAtual = null;
+  lngAtual = null;
+  document.getElementById("loc-status").textContent = "Localização removida";
+  atualizarBotaoRemoverLocalizacao();
 }
 
 function fecharFormulario() {
@@ -80,6 +93,7 @@ function capturarLocalizacao() {
       latAtual = pos.coords.latitude;
       lngAtual = pos.coords.longitude;
       status.textContent = "Localização capturada: " + latAtual.toFixed(6) + ", " + lngAtual.toFixed(6);
+      atualizarBotaoRemoverLocalizacao();
     },
     err => {
       status.textContent = "Não foi possível obter a localização (" + err.message + ")";

@@ -376,6 +376,13 @@ header .titulo { flex: 1; }
   cursor: pointer;
 }
 
+.btn-localizacao-remover {
+  margin-top: 6px;
+  background: #fdecea;
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
 .loc-status {
   grid-column: 1 / -1;
   font-size: 0.78rem;
