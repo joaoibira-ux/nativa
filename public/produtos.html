@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Produtos" />
   <title>NATIVA - Produtos</title>
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./style.css?v=4" />
+  <link rel="stylesheet" href="./style.css?v=5" />
 </head>
 <body>
 
@@ -33,7 +33,11 @@
       <div class="form-row">
         <div class="form-group">
           <label>UD</label>
-          <input type="text" id="f-ud" placeholder="UN, KG, M²..." />
+          <select id="f-ud">
+            <option value="Kg">Kg</option>
+            <option value="Gr">Gr</option>
+            <option value="Ud">Ud</option>
+          </select>
         </div>
         <div class="form-group">
           <label>Valor (R$)</label>
@@ -54,7 +58,7 @@
   </div>
 </div>
 
-<script src="./app.js?v=5"></script>
+<script src="./app.js?v=6"></script>
 <script src="./estoque.js?v=1" data-api="produtos"></script>
 </body>
 </html>

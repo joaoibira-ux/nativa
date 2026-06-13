@@ -351,7 +351,7 @@ header .titulo { flex: 1; }
   margin-bottom: 3px;
 }
 
-.form-group input, .form-group textarea {
+.form-group input, .form-group textarea, .form-group select {
   padding: 10px 11px;
   border: 1.5px solid #ddd;
   border-radius: 8px;
@@ -362,7 +362,7 @@ header .titulo { flex: 1; }
   font-family: inherit;
 }
 
-.form-group input:focus, .form-group textarea:focus { border-color: #1a3322; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #1a3322; }
 
 .btn-localizacao {
   grid-column: 1 / -1;
