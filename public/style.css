@@ -43,14 +43,16 @@ header .titulo { flex: 1; }
 
 /* ---- Tela de abertura ---- */
 .splash-body {
-  background: #efd2ac;
+  background: #f9e6d0;
   align-items: center;
   justify-content: center;
 }
 
 .splash-logo {
-  width: 220px;
-  height: 220px;
+  width: auto;
+  height: 380px;
+  max-width: 85vw;
+  max-height: 70vh;
   object-fit: contain;
   margin-bottom: 10px;
 }
