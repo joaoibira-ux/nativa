@@ -1,0 +1,10 @@
+{
+  "name": "nativa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App NATIVA - Clientes, Materia-Prima e Produtos",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

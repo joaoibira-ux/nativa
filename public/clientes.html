@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Clientes" />
+  <title>NATIVA - Clientes</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="./style.css?v=1" />
+</head>
+<body>
+
+<header>
+  <a class="btn-voltar-header" href="./menu.html">← Menu</a>
+  <span class="titulo">Clientes</span>
+  <span id="versao-app" class="header-versao"></span>
+</header>
+
+<div id="lista" class="lista"></div>
+<button class="fab" id="fab" onclick="abrirFormulario()">+</button>
+
+<div id="form-overlay" class="form-overlay" style="display:none">
+  <div class="form-scroll">
+    <form id="form" novalidate>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Nome *</label>
+          <input type="text" id="f-nome" placeholder="Nome do cliente" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Telefone</label>
+          <input type="tel" id="f-telefone" placeholder="(00) 00000-0000" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Endereço</label>
+          <input type="text" id="f-endereco" placeholder="Rua, número, bairro, cidade" />
+        </div>
+      </div>
+      <div class="form-row">
+        <button type="button" class="btn-localizacao" id="btn-localizacao" onclick="capturarLocalizacao()">📍 Capturar localização atual</button>
+        <div class="loc-status" id="loc-status"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Observações</label>
+          <textarea id="f-obs" rows="3" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" onclick="fecharFormulario()">Cancelar</button>
+        <button type="button" class="btn-save" onclick="salvarCliente()">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="./app.js?v=1"></script>
+<script src="./clientes.js?v=1"></script>
+</body>
+</html>
