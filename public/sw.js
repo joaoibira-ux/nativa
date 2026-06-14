@@ -1,4 +1,4 @@
-const VERSION = "nativa-v14";
+const VERSION = "nativa-v15";
 const ASSETS = [
   "./index.html",
   "./menu.html",
@@ -7,9 +7,9 @@ const ASSETS = [
   "./produtos.html",
   "./pedidos.html",
   "./style.css?v=9",
-  "./app.js?v=14",
+  "./app.js?v=15",
   "./clientes.js?v=2",
-  "./estoque.js?v=3",
+  "./estoque.js?v=4",
   "./pedidos.js?v=1",
   "./manifest.json",
   "./logonativa.png"

@@ -7,14 +7,27 @@ let itemEditando = null;
 let materiaPrimaCache = [];
 
 if (TEM_PACOTE) {
+  document.getElementById("f-pacote").addEventListener("input", recalcularValor);
   document.getElementById("f-peso-pacote").addEventListener("input", recalcularValor);
   document.getElementById("f-preco-pacote").addEventListener("input", recalcularValor);
+  document.getElementById("f-ud").addEventListener("change", () => {
+    atualizarCamposPacote();
+    recalcularValor();
+  });
+}
+
+function atualizarCamposPacote() {
+  const ud = document.getElementById("f-ud").value;
+  document.getElementById("grupo-peso-pacote").style.display = ud === "Ud" ? "none" : "";
 }
 
 function recalcularValor() {
+  const ud = document.getElementById("f-ud").value;
+  const pacote = parseFloat(document.getElementById("f-pacote").value) || 0;
   const peso = parseFloat(document.getElementById("f-peso-pacote").value) || 0;
   const preco = parseMoeda(document.getElementById("f-preco-pacote").value);
-  const valor = peso > 0 ? preco / peso : 0;
+  const divisor = ud === "Ud" ? pacote : peso;
+  const valor = divisor > 0 ? preco / divisor : 0;
   document.getElementById("f-valor").value = valor.toFixed(2).replace(".", ",");
 }
 
@@ -102,6 +115,8 @@ function abrirFormulario(id) {
   } else {
     document.getElementById("form").reset();
   }
+
+  if (TEM_PACOTE) atualizarCamposPacote();
 
   if (TEM_COMPOSICAO) {
     const container = document.getElementById("composicao-container");
