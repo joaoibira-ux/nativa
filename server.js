@@ -131,7 +131,10 @@ function servirArquivo(req, res) {
       return;
     }
     const ext = path.extname(caminho).toLowerCase();
-    res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+    res.writeHead(200, {
+      "Content-Type": MIME[ext] || "application/octet-stream",
+      "Cache-Control": "no-cache"
+    });
     res.end(conteudo);
   });
 }
