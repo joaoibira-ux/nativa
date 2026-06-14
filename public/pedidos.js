@@ -36,6 +36,8 @@ function render(pedidos) {
       </div>
     `).join("");
 
+    const pagamentoTexto = p.pagamento === "avista" ? "À vista" : p.pagamento === "receber" ? "A receber" : "";
+
     return `
       <div class="card">
         <div class="card-acoes">
@@ -43,9 +45,9 @@ function render(pedidos) {
         </div>
         <div class="card-nome">
           ${escHtml(p.cliente_nome)}
-          <button class="badge-status ${statusClasse}" onclick="toggleStatus(${p.id}, '${p.status}')">${escHtml(p.status)}</button>
+          <button class="badge-status ${statusClasse}" onclick="toggleStatus(${p.id}, '${p.status}', ${p.pagamento ? `'${p.pagamento}'` : "null"})">${escHtml(p.status)}</button>
         </div>
-        <div class="card-meta">${fmtData(p.criado_em)}</div>
+        <div class="card-meta">${fmtData(p.criado_em)}${pagamentoTexto ? ` · ${pagamentoTexto}` : ""}</div>
         <div class="pedido-itens">${itensHtml}</div>
         <div class="pedido-total">Total: ${fmtMoeda(p.total)}</div>
         ${p.observacoes ? `<div class="card-obs">${escHtml(p.observacoes)}</div>` : ""}
@@ -151,12 +153,21 @@ async function salvarPedido() {
   carregar();
 }
 
-async function toggleStatus(id, statusAtual) {
+async function toggleStatus(id, statusAtual, pagamentoAtual) {
   const novoStatus = statusAtual === "Entregue" ? "Pendente" : "Entregue";
+  const body = { status: novoStatus };
+
+  if (novoStatus === "Entregue" && !pagamentoAtual) {
+    body.pagamento = await perguntarEscolha("Pagamento do pedido", [
+      { label: "À vista", value: "avista" },
+      { label: "A receber", value: "receber" }
+    ]);
+  }
+
   await fetch(`/api/pedidos/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status: novoStatus })
+    body: JSON.stringify(body)
   });
   carregar();
 }

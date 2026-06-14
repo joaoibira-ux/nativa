@@ -5,22 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="ERP" />
-  <title>ERP - Sistema de Gestão</title>
+  <meta name="apple-mobile-web-app-title" content="A Receber" />
+  <title>NATIVA - A Receber</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./style.css?v=11" />
 </head>
-<body class="splash-body">
+<body>
 
-<img src="./logonativa.png" alt="Logo" class="splash-logo" onerror="this.style.display='none'" />
-<div class="splash">
-  <h1 class="splash-titulo">ERP</h1>
-  <p class="splash-subtitulo">Sistema de Gestão</p>
-  <a class="btn-entrar" href="./menu.html">Entrar</a>
-</div>
+<header>
+  <a class="btn-voltar-header" href="./menu.html">← Menu</a>
+  <span class="titulo">A Receber</span>
+  <span id="versao-app" class="header-versao"></span>
+</header>
 
-<span id="versao-app" class="splash-versao"></span>
+<div id="lista" class="lista"></div>
 
 <script src="./app.js?v=16"></script>
+<script src="./areceber.js?v=1"></script>
 </body>
 </html>

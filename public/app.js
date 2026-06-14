@@ -1,4 +1,4 @@
-const VERSAO_NATIVA = "1.15";
+const VERSAO_NATIVA = "1.16";
 
 document.addEventListener("DOMContentLoaded", () => {
   const el = document.getElementById("versao-app");
@@ -25,4 +25,33 @@ function fmtMoeda(v) {
 function parseMoeda(s) {
   const v = parseFloat(String(s ?? "").replace(/[^\d,.-]/g, "").replace(",", "."));
   return isNaN(v) ? 0 : v;
+}
+
+function fmtDataSimples(data) {
+  if (!data) return "";
+  const [ano, mes, dia] = data.substring(0, 10).split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
+function perguntarEscolha(titulo, opcoes) {
+  return new Promise(resolve => {
+    const overlay = document.createElement("div");
+    overlay.className = "choice-overlay";
+    overlay.innerHTML = `
+      <div class="choice-box">
+        <div class="choice-titulo">${escHtml(titulo)}</div>
+        <div class="choice-botoes">
+          ${opcoes.map((o, i) => `<button type="button" class="btn-choice${i > 0 ? " secundario" : ""}" data-i="${i}">${escHtml(o.label)}</button>`).join("")}
+        </div>
+      </div>
+    `;
+    overlay.querySelectorAll(".btn-choice").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const opcao = opcoes[Number(btn.dataset.i)];
+        overlay.remove();
+        resolve(opcao.value);
+      });
+    });
+    document.body.appendChild(overlay);
+  });
 }

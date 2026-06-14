@@ -493,3 +493,97 @@ body.menu-body {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* ---- Caixa ---- */
+.saldo-card {
+  margin: 12px 12px 0;
+  padding: 18px;
+  border-radius: 14px;
+  background: #1a3322;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.saldo-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #a5d6a7;
+  margin-bottom: 4px;
+}
+
+.saldo-valor {
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.saldo-valor.negativo { color: #ff8a80; }
+
+.valor-entrada { color: #2e7d32; font-weight: 700; }
+.valor-saida { color: #c62828; font-weight: 700; }
+
+/* ---- A Receber / A Pagar ---- */
+.btn-baixa {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  background: #1a3322;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ---- Escolha (modal de pergunta) ---- */
+.choice-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 20px;
+}
+
+.choice-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+.choice-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a3322;
+  margin-bottom: 16px;
+}
+
+.choice-botoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-choice {
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: #1a3322;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-choice.secundario {
+  background: #eee;
+  color: #555;
+}

@@ -166,6 +166,13 @@ async function salvarItem() {
     });
   }
 
+  if (TEM_PACOTE && !itemEditando && payload.preco_pacote > 0) {
+    payload.pagamento = await perguntarEscolha("Pagamento da compra", [
+      { label: "À vista", value: "avista" },
+      { label: "A pagar", value: "apagar" }
+    ]);
+  }
+
   const url = itemEditando ? `/api/${API_ESTOQUE}/${itemEditando}` : `/api/${API_ESTOQUE}`;
   const method = itemEditando ? "PUT" : "POST";
 

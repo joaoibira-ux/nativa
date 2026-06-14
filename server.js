@@ -67,6 +67,34 @@ db.exec(`
     ud TEXT,
     quantidade REAL DEFAULT 0
   );
+
+  CREATE TABLE IF NOT EXISTS caixa_lancamentos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data TEXT NOT NULL DEFAULT (date('now')),
+    descricao TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    valor REAL NOT NULL DEFAULT 0,
+    origem TEXT,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS contas_receber (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pedido_id INTEGER,
+    descricao TEXT NOT NULL,
+    valor REAL NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'Pendente',
+    criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS contas_pagar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    materiaprima_id INTEGER,
+    descricao TEXT NOT NULL,
+    valor REAL NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'Pendente',
+    criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 function garantirColuna(tabela, coluna, definicao) {
@@ -79,6 +107,13 @@ function garantirColuna(tabela, coluna, definicao) {
 garantirColuna("materiaprima", "pacote", "REAL");
 garantirColuna("materiaprima", "peso_pacote", "REAL");
 garantirColuna("materiaprima", "preco_pacote", "REAL");
+garantirColuna("pedidos", "pagamento", "TEXT");
+
+function registrarLancamentoCaixa(descricao, tipo, valor, origem) {
+  db.prepare(`
+    INSERT INTO caixa_lancamentos (descricao, tipo, valor, origem) VALUES (?, ?, ?, ?)
+  `).run(descricao, tipo, valor, origem || null);
+}
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -203,13 +238,22 @@ function listarEstoque(res, tabela) {
 }
 
 function criarEstoque(res, tabela, body) {
-  const { nome, ud, valor, estoque, pacote, peso_pacote, preco_pacote, composicao } = body;
+  const { nome, ud, valor, estoque, pacote, peso_pacote, preco_pacote, composicao, pagamento } = body;
   if (!nome) return enviarJson(res, 400, { erro: "Nome é obrigatório" });
   let info;
   if (tabela === "materiaprima") {
     info = db.prepare(`
       INSERT INTO materiaprima (nome, ud, valor, estoque, pacote, peso_pacote, preco_pacote) VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(nome, ud || null, valor ?? 0, estoque ?? 0, pacote ?? null, peso_pacote ?? null, preco_pacote ?? null);
+
+    const precoNum = Number(preco_pacote) || 0;
+    if (precoNum > 0 && pagamento === "avista") {
+      registrarLancamentoCaixa(`Compra: ${nome}`, "saida", precoNum, "materiaprima");
+    } else if (precoNum > 0 && pagamento === "apagar") {
+      db.prepare(`
+        INSERT INTO contas_pagar (materiaprima_id, descricao, valor) VALUES (?, ?, ?)
+      `).run(info.lastInsertRowid, `Compra: ${nome}`, precoNum);
+    }
   } else {
     info = db.prepare(`
       INSERT INTO ${tabela} (nome, ud, valor, estoque) VALUES (?, ?, ?, ?)
@@ -315,11 +359,30 @@ function criarPedido(res, body) {
 }
 
 function atualizarStatusPedido(res, id, body) {
-  const { status } = body;
+  const { status, pagamento } = body;
   if (!status) return enviarJson(res, 400, { erro: "Status é obrigatório" });
+
+  const pedidoAtual = db.prepare("SELECT * FROM pedidos WHERE id = ?").get(id);
+  if (!pedidoAtual) return enviarJson(res, 404, { erro: "Pedido não encontrado" });
+
+  db.exec("BEGIN");
   db.prepare("UPDATE pedidos SET status = ? WHERE id = ?").run(status, id);
+
+  if (status === "Entregue" && !pedidoAtual.pagamento && (pagamento === "avista" || pagamento === "receber")) {
+    db.prepare("UPDATE pedidos SET pagamento = ? WHERE id = ?").run(pagamento, id);
+    const descricao = `Pedido #${id}: ${pedidoAtual.cliente_nome}`;
+    if (pagamento === "avista") {
+      registrarLancamentoCaixa(descricao, "entrada", pedidoAtual.total, "pedido");
+    } else {
+      db.prepare(`
+        INSERT INTO contas_receber (pedido_id, descricao, valor) VALUES (?, ?, ?)
+      `).run(id, descricao, pedidoAtual.total);
+    }
+  }
+
+  db.exec("COMMIT");
+
   const row = db.prepare("SELECT * FROM pedidos WHERE id = ?").get(id);
-  if (!row) return enviarJson(res, 404, { erro: "Pedido não encontrado" });
   row.itens = db.prepare("SELECT * FROM pedido_itens WHERE pedido_id = ?").all(id);
   enviarJson(res, 200, row);
 }
@@ -333,6 +396,71 @@ function excluirPedido(res, id) {
   db.prepare("DELETE FROM pedidos WHERE id = ?").run(id);
   db.exec("COMMIT");
   res.writeHead(204).end();
+}
+
+// ---------- Caixa ----------
+function listarCaixa(res) {
+  const lancamentos = db.prepare("SELECT * FROM caixa_lancamentos ORDER BY id DESC").all();
+  let saldo = 0;
+  for (const l of lancamentos) saldo += l.tipo === "entrada" ? l.valor : -l.valor;
+  enviarJson(res, 200, { saldo, lancamentos });
+}
+
+function criarLancamentoManual(res, body) {
+  const { data, descricao, tipo, valor } = body;
+  if (!descricao) return enviarJson(res, 400, { erro: "Descrição é obrigatória" });
+  if (tipo !== "entrada" && tipo !== "saida") return enviarJson(res, 400, { erro: "Tipo inválido" });
+  const valorNum = Number(valor) || 0;
+  if (valorNum <= 0) return enviarJson(res, 400, { erro: "Valor deve ser maior que zero" });
+  db.prepare(`
+    INSERT INTO caixa_lancamentos (data, descricao, tipo, valor, origem) VALUES (?, ?, ?, ?, 'manual')
+  `).run(data || new Date().toISOString().slice(0, 10), descricao, tipo, valorNum);
+  listarCaixa(res);
+}
+
+function excluirLancamentoCaixa(res, id) {
+  db.prepare("DELETE FROM caixa_lancamentos WHERE id = ?").run(id);
+  res.writeHead(204).end();
+}
+
+// ---------- Contas a Receber ----------
+function listarContasReceber(res) {
+  const rows = db.prepare("SELECT * FROM contas_receber ORDER BY id DESC").all();
+  enviarJson(res, 200, rows);
+}
+
+function baixarContaReceber(res, id) {
+  const conta = db.prepare("SELECT * FROM contas_receber WHERE id = ?").get(id);
+  if (!conta) return enviarJson(res, 404, { erro: "Conta não encontrada" });
+  if (conta.status === "Recebido") return enviarJson(res, 400, { erro: "Conta já recebida" });
+
+  db.exec("BEGIN");
+  db.prepare("UPDATE contas_receber SET status = 'Recebido' WHERE id = ?").run(id);
+  registrarLancamentoCaixa(`Recebimento: ${conta.descricao}`, "entrada", conta.valor, "baixa_receber");
+  db.exec("COMMIT");
+
+  const row = db.prepare("SELECT * FROM contas_receber WHERE id = ?").get(id);
+  enviarJson(res, 200, row);
+}
+
+// ---------- Contas a Pagar ----------
+function listarContasPagar(res) {
+  const rows = db.prepare("SELECT * FROM contas_pagar ORDER BY id DESC").all();
+  enviarJson(res, 200, rows);
+}
+
+function baixarContaPagar(res, id) {
+  const conta = db.prepare("SELECT * FROM contas_pagar WHERE id = ?").get(id);
+  if (!conta) return enviarJson(res, 404, { erro: "Conta não encontrada" });
+  if (conta.status === "Pago") return enviarJson(res, 400, { erro: "Conta já paga" });
+
+  db.exec("BEGIN");
+  db.prepare("UPDATE contas_pagar SET status = 'Pago' WHERE id = ?").run(id);
+  registrarLancamentoCaixa(`Pagamento: ${conta.descricao}`, "saida", conta.valor, "baixa_pagar");
+  db.exec("COMMIT");
+
+  const row = db.prepare("SELECT * FROM contas_pagar WHERE id = ?").get(id);
+  enviarJson(res, 200, row);
 }
 
 const server = http.createServer(async (req, res) => {
@@ -376,6 +504,22 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && !id) return criarPedido(res, body);
     if (req.method === "PUT" && id) return atualizarStatusPedido(res, id, body);
     if (req.method === "DELETE" && id) return excluirPedido(res, id);
+  }
+
+  if (recurso === "caixa") {
+    if (req.method === "GET" && !id) return listarCaixa(res);
+    if (req.method === "POST" && !id) return criarLancamentoManual(res, body);
+    if (req.method === "DELETE" && id) return excluirLancamentoCaixa(res, id);
+  }
+
+  if (recurso === "contas_receber") {
+    if (req.method === "GET" && !id) return listarContasReceber(res);
+    if (req.method === "POST" && id && partes[3] === "baixa") return baixarContaReceber(res, id);
+  }
+
+  if (recurso === "contas_pagar") {
+    if (req.method === "GET" && !id) return listarContasPagar(res);
+    if (req.method === "POST" && id && partes[3] === "baixa") return baixarContaPagar(res, id);
   }
 
   enviarJson(res, 404, { erro: "Rota não encontrada" });
