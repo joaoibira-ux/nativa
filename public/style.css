@@ -103,8 +103,8 @@ header .titulo { flex: 1; }
 
 /* ---- Menu inicial ---- */
 body.menu-body {
-  background: linear-gradient(160deg, #1a3322 0%, #142a1c 50%, #0d1c12 100%);
-  color: #e8f5e9;
+  background: #c2ad8c;
+  color: #1a3322;
 }
 
 .menu-header {
@@ -114,10 +114,10 @@ body.menu-body {
   margin: max(20px, env(safe-area-inset-top)) 16px 4px;
   padding: 16px 18px;
   border-radius: 20px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.35);
   backdrop-filter: blur(16px) saturate(150%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.5);
 }
 
 .menu-logo {
@@ -132,7 +132,7 @@ body.menu-body {
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: 2px;
-  color: #f1f8f2;
+  color: #1a3322;
 }
 
 .menu-erp {
@@ -142,23 +142,25 @@ body.menu-body {
   font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 3px;
-  color: #a5d6a7;
+  color: #1a3322;
   margin: 2px 0;
 }
 .menu-erp::before, .menu-erp::after {
   content: "";
   width: 16px;
   height: 1px;
-  background: #a5d6a7;
+  background: #1a3322;
   opacity: 0.6;
 }
 
 .menu-sub {
   font-size: 0.6rem;
   letter-spacing: 1.5px;
-  color: #c8e6c9;
+  color: #5c4a32;
   font-weight: 600;
 }
+
+.menu-header .header-versao { color: #5c4a32; }
 
 .apps-grid {
   flex: 1;
@@ -171,10 +173,10 @@ body.menu-body {
 }
 
 .app-card {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.35);
   backdrop-filter: blur(16px) saturate(150%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.5);
   border-radius: 18px;
   padding: 18px 14px 16px;
   display: flex;
@@ -186,12 +188,12 @@ body.menu-body {
   transition: transform .15s, background .15s;
   -webkit-tap-highlight-color: transparent;
 }
-.app-card:active { transform: scale(0.96); background: rgba(165,214,167,0.16); }
+.app-card:active { transform: scale(0.96); background: rgba(26,51,34,0.12); }
 .app-card.wide { grid-column: span 2; flex-direction: row; align-items: center; gap: 14px; }
 
 .app-icon { font-size: 1.8rem; line-height: 1; }
-.app-name { font-size: 0.88rem; font-weight: 700; color: #f1f8f2; }
-.app-desc { font-size: 0.68rem; color: #c8e6c9; font-weight: 500; margin-top: 2px; }
+.app-name { font-size: 0.88rem; font-weight: 700; color: #1a3322; }
+.app-desc { font-size: 0.68rem; color: #5c4a32; font-weight: 500; margin-top: 2px; }
 
 /* ---- Lista / Cards ---- */
 .lista {
