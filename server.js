@@ -58,6 +58,15 @@ db.exec(`
     quantidade REAL DEFAULT 0,
     subtotal REAL DEFAULT 0
   );
+
+  CREATE TABLE IF NOT EXISTS produto_composicao (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    produto_id INTEGER NOT NULL,
+    materiaprima_id INTEGER,
+    materiaprima_nome TEXT NOT NULL,
+    ud TEXT,
+    quantidade REAL DEFAULT 0
+  );
 `);
 
 function garantirColuna(tabela, coluna, definicao) {
@@ -164,13 +173,34 @@ function excluirCliente(res, id) {
 // ---------- Matéria-prima e Produtos (mesma estrutura) ----------
 const TABELAS_ESTOQUE = new Set(["materiaprima", "produtos"]);
 
+function carregarComposicao(produtoId) {
+  return db.prepare("SELECT * FROM produto_composicao WHERE produto_id = ? ORDER BY id").all(produtoId);
+}
+
+function salvarComposicao(produtoId, composicao) {
+  db.prepare("DELETE FROM produto_composicao WHERE produto_id = ?").run(produtoId);
+  if (!Array.isArray(composicao)) return;
+  const inserir = db.prepare(`
+    INSERT INTO produto_composicao (produto_id, materiaprima_id, materiaprima_nome, ud, quantidade) VALUES (?, ?, ?, ?, ?)
+  `);
+  for (const item of composicao) {
+    if (!item.materiaprima_id || !item.quantidade) continue;
+    const mp = db.prepare("SELECT * FROM materiaprima WHERE id = ?").get(item.materiaprima_id);
+    if (!mp) continue;
+    inserir.run(produtoId, mp.id, mp.nome, mp.ud || null, item.quantidade);
+  }
+}
+
 function listarEstoque(res, tabela) {
   const rows = db.prepare(`SELECT * FROM ${tabela} ORDER BY nome COLLATE NOCASE`).all();
+  if (tabela === "produtos") {
+    rows.forEach(row => { row.composicao = carregarComposicao(row.id); });
+  }
   enviarJson(res, 200, rows);
 }
 
 function criarEstoque(res, tabela, body) {
-  const { nome, ud, valor, estoque, pacote, peso_pacote, preco_pacote } = body;
+  const { nome, ud, valor, estoque, pacote, peso_pacote, preco_pacote, composicao } = body;
   if (!nome) return enviarJson(res, 400, { erro: "Nome é obrigatório" });
   let info;
   if (tabela === "materiaprima") {
@@ -181,13 +211,15 @@ function criarEstoque(res, tabela, body) {
     info = db.prepare(`
       INSERT INTO ${tabela} (nome, ud, valor, estoque) VALUES (?, ?, ?, ?)
     `).run(nome, ud || null, valor ?? 0, estoque ?? 0);
+    salvarComposicao(info.lastInsertRowid, composicao);
   }
   const row = db.prepare(`SELECT * FROM ${tabela} WHERE id = ?`).get(info.lastInsertRowid);
+  if (tabela === "produtos") row.composicao = carregarComposicao(row.id);
   enviarJson(res, 201, row);
 }
 
 function atualizarEstoque(res, tabela, id, body) {
-  const { nome, ud, valor, estoque, pacote, peso_pacote, preco_pacote } = body;
+  const { nome, ud, valor, estoque, pacote, peso_pacote, preco_pacote, composicao } = body;
   if (!nome) return enviarJson(res, 400, { erro: "Nome é obrigatório" });
   if (tabela === "materiaprima") {
     db.prepare(`
@@ -197,13 +229,18 @@ function atualizarEstoque(res, tabela, id, body) {
     db.prepare(`
       UPDATE ${tabela} SET nome = ?, ud = ?, valor = ?, estoque = ? WHERE id = ?
     `).run(nome, ud || null, valor ?? 0, estoque ?? 0, id);
+    salvarComposicao(id, composicao);
   }
   const row = db.prepare(`SELECT * FROM ${tabela} WHERE id = ?`).get(id);
   if (!row) return enviarJson(res, 404, { erro: "Registro não encontrado" });
+  if (tabela === "produtos") row.composicao = carregarComposicao(row.id);
   enviarJson(res, 200, row);
 }
 
 function excluirEstoque(res, tabela, id) {
+  if (tabela === "produtos") {
+    db.prepare("DELETE FROM produto_composicao WHERE produto_id = ?").run(id);
+  }
   db.prepare(`DELETE FROM ${tabela} WHERE id = ?`).run(id);
   res.writeHead(204).end();
 }

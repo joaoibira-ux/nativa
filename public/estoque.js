@@ -1,8 +1,10 @@
 const API_ESTOQUE = document.currentScript.dataset.api;
 const TEM_PACOTE = API_ESTOQUE === "materiaprima";
+const TEM_COMPOSICAO = API_ESTOQUE === "produtos";
 
 let itensCache = {};
 let itemEditando = null;
+let materiaPrimaCache = [];
 
 if (TEM_PACOTE) {
   document.getElementById("f-peso-pacote").addEventListener("input", recalcularValor);
@@ -20,6 +22,39 @@ async function carregar() {
   const res = await fetch(`/api/${API_ESTOQUE}`);
   const itens = await res.json();
   render(itens);
+}
+
+async function carregarMateriaPrima() {
+  const res = await fetch("/api/materiaprima");
+  materiaPrimaCache = await res.json();
+}
+
+function criarLinhaComposicao(item) {
+  const opcoes = materiaPrimaCache.map(mp =>
+    `<option value="${mp.id}">${escHtml(mp.nome)} (${escHtml(mp.ud || "-")})</option>`
+  ).join("");
+
+  const linha = document.createElement("div");
+  linha.className = "form-item-row";
+  linha.innerHTML = `
+    <select class="comp-materiaprima">${opcoes}</select>
+    <input type="number" step="any" min="0" class="comp-qtd" value="${item ? item.quantidade : 1}" />
+    <button type="button" class="btn-remove-item" onclick="removerComposicaoItem(this)">✕</button>
+  `;
+  if (item) linha.querySelector(".comp-materiaprima").value = item.materiaprima_id;
+  return linha;
+}
+
+function adicionarComposicaoItem(item) {
+  if (materiaPrimaCache.length === 0) {
+    alert("Cadastre matérias-primas antes de montar a composição.");
+    return;
+  }
+  document.getElementById("composicao-container").appendChild(criarLinhaComposicao(item));
+}
+
+function removerComposicaoItem(botao) {
+  botao.closest(".form-item-row").remove();
 }
 
 function render(itens) {
@@ -68,6 +103,16 @@ function abrirFormulario(id) {
     document.getElementById("form").reset();
   }
 
+  if (TEM_COMPOSICAO) {
+    const container = document.getElementById("composicao-container");
+    container.innerHTML = "";
+    if (itemEditando) {
+      (itensCache[itemEditando].composicao || []).forEach(item => {
+        container.appendChild(criarLinhaComposicao(item));
+      });
+    }
+  }
+
   document.getElementById("form-overlay").style.display = "flex";
 }
 
@@ -95,6 +140,17 @@ async function salvarItem() {
     payload.preco_pacote = parseMoeda(document.getElementById("f-preco-pacote").value);
   }
 
+  if (TEM_COMPOSICAO) {
+    payload.composicao = [];
+    document.querySelectorAll("#composicao-container .form-item-row").forEach(linha => {
+      const materiaprimaId = Number(linha.querySelector(".comp-materiaprima").value);
+      const quantidade = parseFloat(linha.querySelector(".comp-qtd").value) || 0;
+      if (materiaprimaId && quantidade > 0) {
+        payload.composicao.push({ materiaprima_id: materiaprimaId, quantidade });
+      }
+    });
+  }
+
   const url = itemEditando ? `/api/${API_ESTOQUE}/${itemEditando}` : `/api/${API_ESTOQUE}`;
   const method = itemEditando ? "PUT" : "POST";
 
@@ -114,4 +170,5 @@ async function excluirItem(id) {
   carregar();
 }
 
-carregar();
+if (TEM_COMPOSICAO) carregarMateriaPrima().then(carregar);
+else carregar();

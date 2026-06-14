@@ -50,6 +50,13 @@
           <input type="number" step="any" id="f-estoque" placeholder="0" />
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Composição (Matérias-Primas)</label>
+        </div>
+      </div>
+      <div id="composicao-container"></div>
+      <button type="button" class="btn-add-item" onclick="adicionarComposicaoItem()">+ Adicionar matéria-prima</button>
       <div class="form-actions">
         <button type="button" class="btn-cancel" onclick="fecharFormulario()">Cancelar</button>
         <button type="button" class="btn-save" onclick="salvarItem()">Salvar</button>
@@ -58,7 +65,7 @@
   </div>
 </div>
 
-<script src="./app.js?v=11"></script>
-<script src="./estoque.js?v=2" data-api="produtos"></script>
+<script src="./app.js?v=12"></script>
+<script src="./estoque.js?v=3" data-api="produtos"></script>
 </body>
 </html>
