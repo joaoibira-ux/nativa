@@ -1,4 +1,4 @@
-const VERSAO_NATIVA = "1.18";
+const VERSAO_NATIVA = "1.19";
 
 document.addEventListener("DOMContentLoaded", () => {
   const el = document.getElementById("versao-app");

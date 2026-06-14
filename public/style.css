@@ -14,8 +14,8 @@ body {
 }
 
 header {
-  background: #1a3322;
-  color: white;
+  background: #ad9774;
+  color: #1a3322;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -30,12 +30,12 @@ header .titulo { flex: 1; }
 
 .header-versao {
   font-size: 0.7rem;
-  color: #a5d6a7;
+  color: #5c4a32;
   font-weight: 400;
 }
 
 .btn-voltar-header {
-  color: #a5d6a7;
+  color: #1a3322;
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 600;
@@ -159,8 +159,6 @@ body.menu-body {
   color: #5c4a32;
   font-weight: 600;
 }
-
-.menu-header .header-versao { color: #5c4a32; }
 
 .apps-grid {
   flex: 1;
