@@ -1,4 +1,4 @@
-const VERSAO_NATIVA = "1.11";
+const VERSAO_NATIVA = "1.12";
 
 document.addEventListener("DOMContentLoaded", () => {
   const el = document.getElementById("versao-app");
@@ -7,8 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(() => {});
   });
+  navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload());
 }
 
 function escHtml(s) {
