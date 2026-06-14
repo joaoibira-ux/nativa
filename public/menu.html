@@ -8,31 +8,48 @@
   <meta name="apple-mobile-web-app-title" content="NATIVA" />
   <title>NATIVA - Menu</title>
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./style.css?v=9" />
+  <link rel="stylesheet" href="./style.css?v=10" />
 </head>
-<body>
+<body class="menu-body">
 
-<header>
-  <span class="titulo">NATIVA</span>
+<div class="menu-header">
+  <img src="./logonativa.png" alt="NATIVA" class="menu-logo" onerror="this.style.display='none'" />
+  <div class="menu-title-block">
+    <div class="menu-title">NATIVA</div>
+    <div class="menu-erp">ERP</div>
+    <div class="menu-sub">SISTEMA DE GESTÃO</div>
+  </div>
   <span id="versao-app" class="header-versao"></span>
-</header>
+</div>
 
-<div class="menu">
-  <a class="menu-card" href="./clientes.html">
-    <span class="icone">👤</span>
-    <span>Clientes</span>
+<div class="apps-grid">
+  <a class="app-card" href="./clientes.html">
+    <span class="app-icon">👤</span>
+    <div>
+      <div class="app-name">Clientes</div>
+      <div class="app-desc">Cadastro de clientes</div>
+    </div>
   </a>
-  <a class="menu-card" href="./materiaprima.html">
-    <span class="icone">📦</span>
-    <span>Matéria-Prima</span>
+  <a class="app-card" href="./materiaprima.html">
+    <span class="app-icon">📦</span>
+    <div>
+      <div class="app-name">Matéria-Prima</div>
+      <div class="app-desc">Estoque de insumos</div>
+    </div>
   </a>
-  <a class="menu-card" href="./produtos.html">
-    <span class="icone">🏷️</span>
-    <span>Produtos</span>
+  <a class="app-card" href="./produtos.html">
+    <span class="app-icon">🏷️</span>
+    <div>
+      <div class="app-name">Produtos</div>
+      <div class="app-desc">Catálogo e composição</div>
+    </div>
   </a>
-  <a class="menu-card" href="./pedidos.html">
-    <span class="icone">🧾</span>
-    <span>Pedidos</span>
+  <a class="app-card" href="./pedidos.html">
+    <span class="app-icon">🧾</span>
+    <div>
+      <div class="app-name">Pedidos</div>
+      <div class="app-desc">Vendas e encomendas</div>
+    </div>
   </a>
 </div>
 
