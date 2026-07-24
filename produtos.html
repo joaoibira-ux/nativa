@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Matéria-Prima" />
-  <title>NATIVA - Matéria-Prima</title>
+  <meta name="apple-mobile-web-app-title" content="Produtos" />
+  <title>NATIVA - Produtos</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./style.css?v=14" />
 </head>
@@ -14,7 +14,7 @@
 
 <header>
   <a class="btn-voltar-header" href="./menu.html">← Menu</a>
-  <span class="titulo">Matéria-Prima</span>
+  <span class="titulo">Produtos</span>
   <span id="versao-app" class="header-versao"></span>
 </header>
 
@@ -27,7 +27,7 @@
       <div class="form-row">
         <div class="form-group full">
           <label>Nome *</label>
-          <input type="text" id="f-nome" placeholder="Nome do item" />
+          <input type="text" id="f-nome" placeholder="Nome do produto" />
         </div>
       </div>
       <div class="form-row">
@@ -40,30 +40,23 @@
           </select>
         </div>
         <div class="form-group">
+          <label>Valor (R$)</label>
+          <input type="text" inputmode="decimal" id="f-valor" placeholder="0,00" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
           <label>Estoque</label>
           <input type="number" step="any" id="f-estoque" placeholder="0" />
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Pacote (unidades)</label>
-          <input type="number" step="any" id="f-pacote" placeholder="Ex: 12" />
-        </div>
-        <div class="form-group" id="grupo-peso-pacote">
-          <label>Peso do pacote</label>
-          <input type="number" step="any" id="f-peso-pacote" placeholder="0" />
+        <div class="form-group full">
+          <label>Composição (Matérias-Primas)</label>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Preço do pacote (R$)</label>
-          <input type="text" inputmode="decimal" id="f-preco-pacote" placeholder="0,00" />
-        </div>
-        <div class="form-group">
-          <label>Valor (R$/UD)</label>
-          <input type="text" id="f-valor" placeholder="0,00" readonly />
-        </div>
-      </div>
+      <div id="composicao-container"></div>
+      <button type="button" class="btn-add-item" onclick="adicionarComposicaoItem()">+ Adicionar matéria-prima</button>
       <div class="form-actions">
         <button type="button" class="btn-cancel" onclick="fecharFormulario()">Cancelar</button>
         <button type="button" class="btn-save" onclick="salvarItem()">Salvar</button>
@@ -72,7 +65,9 @@
   </div>
 </div>
 
-<script src="./app.js?v=16"></script>
-<script src="./estoque.js?v=5" data-api="materiaprima"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="./app.js?v=17"></script>
+<script src="./estoque.js?v=6" data-api="produtos"></script>
 </body>
 </html>

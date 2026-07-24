@@ -2,6 +2,10 @@ const API_ESTOQUE = document.currentScript.dataset.api;
 const TEM_PACOTE = API_ESTOQUE === "materiaprima";
 const TEM_COMPOSICAO = API_ESTOQUE === "produtos";
 
+const colEstoque = db.collection(API_ESTOQUE);
+const colCaixa = db.collection("caixaLancamentos");
+const colContasPagar = db.collection("contasPagar");
+
 let itensCache = {};
 let itemEditando = null;
 let materiaPrimaCache = [];
@@ -31,15 +35,15 @@ function recalcularValor() {
   document.getElementById("f-valor").value = valor.toFixed(2).replace(".", ",");
 }
 
-async function carregar() {
-  const res = await fetch(`/api/${API_ESTOQUE}`);
-  const itens = await res.json();
+colEstoque.orderBy("nome").onSnapshot(snap => {
+  const itens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   render(itens);
-}
+});
 
-async function carregarMateriaPrima() {
-  const res = await fetch("/api/materiaprima");
-  materiaPrimaCache = await res.json();
+if (TEM_COMPOSICAO) {
+  db.collection("materiaprima").orderBy("nome").onSnapshot(snap => {
+    materiaPrimaCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  });
 }
 
 function criarLinhaComposicao(item) {
@@ -54,7 +58,7 @@ function criarLinhaComposicao(item) {
     <input type="number" step="any" min="0" class="comp-qtd" value="${item ? item.quantidade : 1}" />
     <button type="button" class="btn-remove-item" onclick="removerComposicaoItem(this)">✕</button>
   `;
-  if (item) linha.querySelector(".comp-materiaprima").value = item.materiaprima_id;
+  if (item) linha.querySelector(".comp-materiaprima").value = item.materiaprimaId;
   return linha;
 }
 
@@ -84,8 +88,8 @@ function render(itens) {
     return `
       <div class="card">
         <div class="card-acoes">
-          <button class="btn-edit" onclick="abrirFormulario(${i.id})">✏️</button>
-          <button class="btn-del" onclick="excluirItem(${i.id})">🗑️</button>
+          <button class="btn-edit" onclick="abrirFormulario('${i.id}')">✏️</button>
+          <button class="btn-del" onclick="excluirItem('${i.id}')">🗑️</button>
         </div>
         <div class="card-nome">${escHtml(i.nome)}</div>
         <div class="card-meta">
@@ -109,8 +113,8 @@ function abrirFormulario(id) {
     document.getElementById("f-estoque").value = i.estoque ?? 0;
     if (TEM_PACOTE) {
       document.getElementById("f-pacote").value = i.pacote ?? "";
-      document.getElementById("f-peso-pacote").value = i.peso_pacote ?? "";
-      document.getElementById("f-preco-pacote").value = String(i.preco_pacote ?? 0).replace(".", ",");
+      document.getElementById("f-peso-pacote").value = i.pesoPacote ?? "";
+      document.getElementById("f-preco-pacote").value = String(i.precoPacote ?? 0).replace(".", ",");
     }
   } else {
     document.getElementById("form").reset();
@@ -151,46 +155,69 @@ async function salvarItem() {
 
   if (TEM_PACOTE) {
     payload.pacote = parseFloat(document.getElementById("f-pacote").value) || null;
-    payload.peso_pacote = parseFloat(document.getElementById("f-peso-pacote").value) || null;
-    payload.preco_pacote = parseMoeda(document.getElementById("f-preco-pacote").value);
+    payload.pesoPacote = parseFloat(document.getElementById("f-peso-pacote").value) || null;
+    payload.precoPacote = parseMoeda(document.getElementById("f-preco-pacote").value);
   }
 
   if (TEM_COMPOSICAO) {
     payload.composicao = [];
     document.querySelectorAll("#composicao-container .form-item-row").forEach(linha => {
-      const materiaprimaId = Number(linha.querySelector(".comp-materiaprima").value);
+      const materiaprimaId = linha.querySelector(".comp-materiaprima").value;
       const quantidade = parseFloat(linha.querySelector(".comp-qtd").value) || 0;
       if (materiaprimaId && quantidade > 0) {
-        payload.composicao.push({ materiaprima_id: materiaprimaId, quantidade });
+        const mp = materiaPrimaCache.find(m => m.id === materiaprimaId);
+        payload.composicao.push({
+          materiaprimaId,
+          materiaprimaNome: mp ? mp.nome : "",
+          ud: mp ? (mp.ud || "") : "",
+          quantidade
+        });
       }
     });
   }
 
-  if (TEM_PACOTE && !itemEditando && payload.preco_pacote > 0) {
-    payload.pagamento = await perguntarEscolha("Pagamento da compra", [
+  let pagamentoEscolhido = null;
+  if (TEM_PACOTE && !itemEditando && payload.precoPacote > 0) {
+    pagamentoEscolhido = await perguntarEscolha("Pagamento da compra", [
       { label: "À vista", value: "avista" },
       { label: "A pagar", value: "apagar" }
     ]);
   }
 
-  const url = itemEditando ? `/api/${API_ESTOQUE}/${itemEditando}` : `/api/${API_ESTOQUE}`;
-  const method = itemEditando ? "PUT" : "POST";
+  let itemId = itemEditando;
+  if (itemEditando) {
+    await colEstoque.doc(itemEditando).update(payload);
+  } else {
+    const ref = await colEstoque.add(payload);
+    itemId = ref.id;
+  }
 
-  await fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  const precoNum = Number(payload.precoPacote) || 0;
+  if (TEM_PACOTE && !itemEditando && precoNum > 0) {
+    if (pagamentoEscolhido === "avista") {
+      await colCaixa.add({
+        data: new Date().toISOString().slice(0, 10),
+        descricao: `Compra: ${nome}`,
+        tipo: "saida",
+        valor: precoNum,
+        origem: "materiaprima",
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else if (pagamentoEscolhido === "apagar") {
+      await colContasPagar.add({
+        materiaprimaId: itemId,
+        descricao: `Compra: ${nome}`,
+        valor: precoNum,
+        status: "Pendente",
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+  }
 
   fecharFormulario();
-  carregar();
 }
 
 async function excluirItem(id) {
   if (!confirm("Excluir este item?")) return;
-  await fetch(`/api/${API_ESTOQUE}/${id}`, { method: "DELETE" });
-  carregar();
+  await colEstoque.doc(id).delete();
 }
-
-if (TEM_COMPOSICAO) carregarMateriaPrima().then(carregar);
-else carregar();

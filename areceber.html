@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="A Pagar" />
-  <title>NATIVA - A Pagar</title>
+  <meta name="apple-mobile-web-app-title" content="A Receber" />
+  <title>NATIVA - A Receber</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./style.css?v=14" />
 </head>
@@ -14,13 +14,15 @@
 
 <header>
   <a class="btn-voltar-header" href="./menu.html">← Menu</a>
-  <span class="titulo">A Pagar</span>
+  <span class="titulo">A Receber</span>
   <span id="versao-app" class="header-versao"></span>
 </header>
 
 <div id="lista" class="lista"></div>
 
-<script src="./app.js?v=16"></script>
-<script src="./apagar.js?v=1"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="./app.js?v=17"></script>
+<script src="./areceber.js?v=2"></script>
 </body>
 </html>

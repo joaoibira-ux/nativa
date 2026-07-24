@@ -1,4 +1,4 @@
-const VERSION = "nativa-v20";
+const VERSION = "nativa-v21";
 const ASSETS = [
   "./index.html",
   "./menu.html",
@@ -10,13 +10,13 @@ const ASSETS = [
   "./areceber.html",
   "./apagar.html",
   "./style.css?v=14",
-  "./app.js?v=16",
-  "./clientes.js?v=2",
-  "./estoque.js?v=5",
-  "./pedidos.js?v=2",
-  "./caixa.js?v=1",
-  "./areceber.js?v=1",
-  "./apagar.js?v=1",
+  "./app.js?v=17",
+  "./clientes.js?v=3",
+  "./estoque.js?v=6",
+  "./pedidos.js?v=3",
+  "./caixa.js?v=2",
+  "./areceber.js?v=2",
+  "./apagar.js?v=2",
   "./manifest.json",
   "./logonativa.png"
 ];
@@ -41,7 +41,7 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
-  if (e.request.url.includes("/api/")) return;
+  if (e.request.url.includes("firestore.googleapis.com") || e.request.url.includes("gstatic.com")) return;
   if (e.request.mode === "navigate") {
     e.respondWith(fetch(e.request).catch(() => caches.match("./index.html")));
     return;

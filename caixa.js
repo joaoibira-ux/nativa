@@ -1,26 +1,27 @@
-let caixaCache = { saldo: 0, lancamentos: [] };
+const colCaixa = db.collection("caixaLancamentos");
 
-async function carregar() {
-  const res = await fetch("/api/caixa");
-  caixaCache = await res.json();
-  render();
-}
+colCaixa.orderBy("criadoEm", "desc").onSnapshot(snap => {
+  const lancamentos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  let saldo = 0;
+  for (const l of lancamentos) saldo += l.tipo === "entrada" ? l.valor : -l.valor;
+  render(saldo, lancamentos);
+});
 
-function render() {
+function render(saldo, lancamentos) {
   const saldoEl = document.getElementById("saldo-valor");
-  saldoEl.textContent = fmtMoeda(caixaCache.saldo);
-  saldoEl.classList.toggle("negativo", caixaCache.saldo < 0);
+  saldoEl.textContent = fmtMoeda(saldo);
+  saldoEl.classList.toggle("negativo", saldo < 0);
 
   const lista = document.getElementById("lista");
-  if (caixaCache.lancamentos.length === 0) {
+  if (lancamentos.length === 0) {
     lista.innerHTML = '<div class="empty">Nenhum lançamento registrado</div>';
     return;
   }
 
-  lista.innerHTML = caixaCache.lancamentos.map(l => `
+  lista.innerHTML = lancamentos.map(l => `
     <div class="card">
       <div class="card-acoes">
-        <button class="btn-del" onclick="excluirLancamento(${l.id})">🗑️</button>
+        <button class="btn-del" onclick="excluirLancamento('${l.id}')">🗑️</button>
       </div>
       <div class="card-nome">${escHtml(l.descricao)}</div>
       <div class="card-meta">
@@ -55,25 +56,19 @@ async function salvarLancamento() {
     return;
   }
 
-  await fetch("/api/caixa", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      data: document.getElementById("f-data").value,
-      tipo: document.getElementById("f-tipo").value,
-      descricao,
-      valor
-    })
+  await colCaixa.add({
+    data: document.getElementById("f-data").value,
+    tipo: document.getElementById("f-tipo").value,
+    descricao,
+    valor,
+    origem: "manual",
+    criadoEm: firebase.firestore.FieldValue.serverTimestamp()
   });
 
   fecharFormulario();
-  carregar();
 }
 
 async function excluirLancamento(id) {
   if (!confirm("Excluir este lançamento?")) return;
-  await fetch(`/api/caixa/${id}`, { method: "DELETE" });
-  carregar();
+  await colCaixa.doc(id).delete();
 }
-
-carregar();

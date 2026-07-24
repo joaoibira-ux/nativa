@@ -1,13 +1,13 @@
+const colClientes = db.collection("clientes");
 let clientesCache = {};
 let clienteEditando = null;
 let latAtual = null;
 let lngAtual = null;
 
-async function carregar() {
-  const res = await fetch("/api/clientes");
-  const clientes = await res.json();
+colClientes.orderBy("nome").onSnapshot(snap => {
+  const clientes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   render(clientes);
-}
+});
 
 function render(clientes) {
   const lista = document.getElementById("lista");
@@ -27,8 +27,8 @@ function render(clientes) {
     return `
       <div class="card">
         <div class="card-acoes">
-          <button class="btn-edit" onclick="abrirFormulario(${c.id})">✏️</button>
-          <button class="btn-del" onclick="excluirCliente(${c.id})">🗑️</button>
+          <button class="btn-edit" onclick="abrirFormulario('${c.id}')">✏️</button>
+          <button class="btn-del" onclick="excluirCliente('${c.id}')">🗑️</button>
         </div>
         <div class="card-nome">${escHtml(c.nome)}</div>
         ${c.telefone ? `<div class="card-info">📞 ${escHtml(c.telefone)}</div>` : ""}
@@ -118,23 +118,17 @@ async function salvarCliente() {
     longitude: lngAtual
   };
 
-  const url = clienteEditando ? `/api/clientes/${clienteEditando}` : "/api/clientes";
-  const method = clienteEditando ? "PUT" : "POST";
-
-  await fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  if (clienteEditando) {
+    await colClientes.doc(clienteEditando).update(payload);
+  } else {
+    payload.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
+    await colClientes.add(payload);
+  }
 
   fecharFormulario();
-  carregar();
 }
 
 async function excluirCliente(id) {
   if (!confirm("Excluir este cliente?")) return;
-  await fetch(`/api/clientes/${id}`, { method: "DELETE" });
-  carregar();
+  await colClientes.doc(id).delete();
 }
-
-carregar();
