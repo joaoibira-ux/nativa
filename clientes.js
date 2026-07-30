@@ -22,13 +22,13 @@ function render(clientes) {
     clientesCache[c.id] = c;
     let loc = "";
     if (c.latitude != null && c.longitude != null) {
-      loc = `<a class="card-loc" target="_blank" href="https://www.google.com/maps?q=${c.latitude},${c.longitude}">📍 Ver localização no mapa</a>`;
+      loc = `<a class="card-loc" target="_blank" onclick="event.stopPropagation()" href="https://www.google.com/maps?q=${c.latitude},${c.longitude}">📍 Ver localização no mapa</a>`;
     }
     return `
-      <div class="card">
+      <div class="card" style="cursor:pointer" onclick="visualizarCliente('${c.id}')">
         <div class="card-acoes">
-          <button class="btn-edit" onclick="abrirFormulario('${c.id}')">✏️</button>
-          <button class="btn-del" onclick="excluirCliente('${c.id}')">🗑️</button>
+          <button class="btn-edit" onclick="event.stopPropagation(); abrirFormulario('${c.id}')">✏️</button>
+          <button class="btn-del" onclick="event.stopPropagation(); excluirCliente('${c.id}')">🗑️</button>
         </div>
         <div class="card-nome">${escHtml(c.nome)}</div>
         ${c.telefone ? `<div class="card-info">📞 ${escHtml(c.telefone)}</div>` : ""}
@@ -62,8 +62,72 @@ function abrirFormulario(id) {
     document.getElementById("form").reset();
   }
 
+  definirModoFormulario(false);
   atualizarBotaoRemoverLocalizacao();
   document.getElementById("form-overlay").style.display = "flex";
+}
+
+// Tela só de observação — abre ao clicar no card (fora dos botões de editar/
+// excluir). Mesmo layout do formulário, mas nada é editável; a localização
+// vira um campo pra copiar e colar (ex: mandar pro motoboy no WhatsApp), com
+// aviso de "não cadastrada" quando o cliente ainda não tem uma salva.
+function visualizarCliente(id) {
+  const c = clientesCache[id];
+  if (!c) return;
+
+  clienteEditando = id;
+  latAtual = c.latitude != null ? c.latitude : null;
+  lngAtual = c.longitude != null ? c.longitude : null;
+
+  document.getElementById("f-nome").value = c.nome || "";
+  document.getElementById("f-telefone").value = c.telefone || "";
+  document.getElementById("f-endereco").value = c.endereco || "";
+  document.getElementById("f-obs").value = c.observacoes || "";
+  document.getElementById("f-loc-link").value = "";
+  document.getElementById("loc-status").textContent = "";
+
+  definirModoFormulario(true);
+
+  const temLocalizacao = latAtual != null && lngAtual != null;
+  document.getElementById("row-ver-localizacao").style.display = temLocalizacao ? "" : "none";
+  document.getElementById("row-sem-localizacao").style.display = temLocalizacao ? "none" : "";
+  if (temLocalizacao) {
+    document.getElementById("ver-loc-texto").value = "https://www.google.com/maps?q=" + latAtual + "," + lngAtual;
+  }
+
+  document.getElementById("form-overlay").style.display = "flex";
+}
+
+function definirModoFormulario(visualizacao) {
+  ["f-nome", "f-telefone", "f-endereco", "f-obs"].forEach(id => {
+    document.getElementById(id).readOnly = visualizacao;
+  });
+
+  document.getElementById("row-colar-localizacao").style.display = visualizacao ? "none" : "";
+  document.getElementById("row-editar-localizacao").style.display = visualizacao ? "none" : "";
+  document.getElementById("acoes-edicao").style.display = visualizacao ? "none" : "";
+  document.getElementById("acoes-visualizacao").style.display = visualizacao ? "" : "none";
+
+  if (!visualizacao) {
+    document.getElementById("row-ver-localizacao").style.display = "none";
+    document.getElementById("row-sem-localizacao").style.display = "none";
+  }
+}
+
+async function copiarLocalizacao(btn) {
+  const texto = document.getElementById("ver-loc-texto").value;
+  try {
+    await navigator.clipboard.writeText(texto);
+  } catch (e) {
+    const input = document.getElementById("ver-loc-texto");
+    input.removeAttribute("readonly");
+    input.select();
+    document.execCommand("copy");
+    input.setAttribute("readonly", "readonly");
+  }
+  const original = btn.textContent;
+  btn.textContent = "✅ Copiado!";
+  setTimeout(() => { btn.textContent = original; }, 1500);
 }
 
 function atualizarBotaoRemoverLocalizacao() {

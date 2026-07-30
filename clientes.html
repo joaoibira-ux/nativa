@@ -42,17 +42,29 @@
           <input type="text" id="f-endereco" placeholder="Rua, número, bairro, cidade" />
         </div>
       </div>
-      <div class="form-row">
+      <div class="form-row" id="row-colar-localizacao">
         <div class="form-group full">
           <label>Localização recebida no WhatsApp</label>
           <input type="text" id="f-loc-link" placeholder="Cole aqui o link ou as coordenadas que o cliente mandou" />
         </div>
       </div>
-      <div class="form-row">
+      <div class="form-row" id="row-editar-localizacao">
         <button type="button" class="btn-localizacao" id="btn-usar-link" onclick="usarLinkLocalizacao()">📍 Usar essa localização</button>
         <button type="button" class="btn-localizacao" id="btn-localizacao" onclick="capturarLocalizacao()" title="Só funciona se você estiver fisicamente no local do cliente agora">📍 Estou no local agora</button>
         <button type="button" class="btn-localizacao btn-localizacao-remover" id="btn-remover-localizacao" onclick="removerLocalizacao()" style="display:none">🗑️ Remover localização</button>
         <div class="loc-status" id="loc-status"></div>
+      </div>
+      <div class="form-row" id="row-ver-localizacao" style="display:none">
+        <div class="form-group full">
+          <label>Localização</label>
+          <div class="ver-loc-wrap">
+            <input type="text" id="ver-loc-texto" readonly />
+            <button type="button" class="btn-localizacao" onclick="copiarLocalizacao(this)">📋 Copiar</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-row" id="row-sem-localizacao" style="display:none">
+        <div class="loc-status">Localização não cadastrada.</div>
       </div>
       <div class="form-row">
         <div class="form-group full">
@@ -60,9 +72,12 @@
           <textarea id="f-obs" rows="3" placeholder="Opcional"></textarea>
         </div>
       </div>
-      <div class="form-actions">
+      <div class="form-actions" id="acoes-edicao">
         <button type="button" class="btn-cancel" onclick="fecharFormulario()">Cancelar</button>
         <button type="button" class="btn-save" onclick="salvarCliente()">Salvar</button>
+      </div>
+      <div class="form-actions" id="acoes-visualizacao" style="display:none">
+        <button type="button" class="btn-save" onclick="fecharFormulario()">Fechar</button>
       </div>
     </form>
   </div>
@@ -71,6 +86,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./app.js?v=17"></script>
-<script src="./clientes.js?v=4"></script>
+<script src="./clientes.js?v=5"></script>
 </body>
 </html>

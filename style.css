@@ -437,6 +437,13 @@ body.menu-body {
   color: #555;
 }
 
+.ver-loc-wrap {
+  display: flex;
+  gap: 6px;
+}
+.ver-loc-wrap input { flex: 1; min-width: 0; }
+.ver-loc-wrap .btn-localizacao { grid-column: unset; flex: 0 0 auto; }
+
 .btn-localizacao {
   grid-column: 1 / -1;
   padding: 10px;
