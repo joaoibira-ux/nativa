@@ -45,6 +45,7 @@ function abrirFormulario(id) {
   latAtual = null;
   lngAtual = null;
   document.getElementById("loc-status").textContent = "";
+  document.getElementById("f-loc-link").value = "";
 
   if (clienteEditando) {
     const c = clientesCache[clienteEditando];
@@ -79,6 +80,48 @@ function removerLocalizacao() {
 
 function fecharFormulario() {
   document.getElementById("form-overlay").style.display = "none";
+}
+
+// Extrai latitude/longitude do que o cliente manda pelo WhatsApp — o app de
+// WhatsApp normalmente gera um link do Google Maps ao encaminhar/copiar uma
+// localização (formatos "?q=lat,lng" ou "/@lat,lng,z"), mas também aceita as
+// coordenadas coladas direto (ex: copiadas de dentro do próprio Maps).
+// Links curtos (maps.app.goo.gl/...) não têm as coordenadas no texto do
+// link — precisam ser abertos pra resolver, esse parser não cobre esse caso.
+function extrairCoordenadas(texto) {
+  texto = (texto || "").trim();
+  if (!texto) return null;
+
+  let m = texto.match(/[?&](?:q|query)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+  m = texto.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+  m = texto.match(/^(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+  return null;
+}
+
+function usarLinkLocalizacao() {
+  const status = document.getElementById("loc-status");
+  const texto = document.getElementById("f-loc-link").value;
+  const coords = extrairCoordenadas(texto);
+
+  if (!coords) {
+    status.textContent = "Não consegui encontrar coordenadas nesse texto — cole o link do Maps ou \"latitude, longitude\".";
+    return;
+  }
+  if (Math.abs(coords.lat) > 90 || Math.abs(coords.lng) > 180) {
+    status.textContent = "Coordenadas fora do intervalo válido — confere se colou o texto certo.";
+    return;
+  }
+
+  latAtual = coords.lat;
+  lngAtual = coords.lng;
+  status.textContent = "Localização capturada: " + latAtual.toFixed(6) + ", " + lngAtual.toFixed(6);
+  atualizarBotaoRemoverLocalizacao();
 }
 
 function capturarLocalizacao() {
