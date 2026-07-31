@@ -188,27 +188,6 @@ function usarLinkLocalizacao() {
   atualizarBotaoRemoverLocalizacao();
 }
 
-function capturarLocalizacao() {
-  const status = document.getElementById("loc-status");
-  if (!navigator.geolocation) {
-    status.textContent = "Geolocalização não suportada neste dispositivo";
-    return;
-  }
-  status.textContent = "Obtendo localização...";
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      latAtual = pos.coords.latitude;
-      lngAtual = pos.coords.longitude;
-      status.textContent = "Localização capturada: " + latAtual.toFixed(6) + ", " + lngAtual.toFixed(6);
-      atualizarBotaoRemoverLocalizacao();
-    },
-    err => {
-      status.textContent = "Não foi possível obter a localização (" + err.message + ")";
-    },
-    { enableHighAccuracy: true, timeout: 15000 }
-  );
-}
-
 async function salvarCliente() {
   const nome = document.getElementById("f-nome").value.trim();
   if (!nome) {
