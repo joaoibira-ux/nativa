@@ -114,6 +114,29 @@ function definirModoFormulario(visualizacao) {
   }
 }
 
+async function copiarLinkCardapio() {
+  const c = clientesCache[clienteEditando];
+  if (!c) return;
+
+  const link = "https://joaoibira-ux.github.io/nativa/cardapio/?cliente=" + clienteEditando;
+  const btn = document.getElementById("btn-link-cardapio");
+
+  try {
+    await navigator.clipboard.writeText(link);
+  } catch (e) {
+    const input = document.createElement("input");
+    input.value = link;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand("copy");
+    document.body.removeChild(input);
+  }
+
+  const original = btn.textContent;
+  btn.textContent = "✅ Link copiado!";
+  setTimeout(() => { btn.textContent = original; }, 1500);
+}
+
 async function copiarLocalizacao(btn) {
   const texto = document.getElementById("ver-loc-texto").value;
   try {
