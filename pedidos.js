@@ -5,15 +5,10 @@ const colCaixa = db.collection("caixaLancamentos");
 const colContasReceber = db.collection("contasReceber");
 
 let clientesCache = [];
-let produtosCache = [];
 let pedidosCache = {};
 
 colClientes.orderBy("nome").onSnapshot(snap => {
   clientesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-});
-
-colProdutos.orderBy("nome").onSnapshot(snap => {
-  produtosCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 });
 
 colPedidos.orderBy("criadoEm", "desc").onSnapshot(snap => {
@@ -60,135 +55,30 @@ function render(pedidos) {
   }).join("");
 }
 
-function criarLinhaItem() {
-  const opcoes = produtosCache.map(prod =>
-    `<option value="${prod.id}" data-valor="${prod.valor}">${escHtml(prod.nome)} (${fmtMoeda(prod.valor)})</option>`
-  ).join("");
-
-  const linha = document.createElement("div");
-  linha.className = "form-item-row";
-  linha.innerHTML = `
-    <select class="item-produto">${opcoes}</select>
-    <input type="number" step="any" min="0" class="item-qtd" value="1" />
-    <button type="button" class="btn-remove-item" onclick="removerItem(this)">✕</button>
-  `;
-  linha.querySelector(".item-produto").addEventListener("change", recalcularTotal);
-  linha.querySelector(".item-qtd").addEventListener("input", recalcularTotal);
-  return linha;
-}
-
-function adicionarItem() {
-  document.getElementById("itens-container").appendChild(criarLinhaItem());
-  recalcularTotal();
-}
-
-function removerItem(botao) {
-  botao.closest(".form-item-row").remove();
-  recalcularTotal();
-}
-
-function recalcularTotal() {
-  let total = 0;
-  document.querySelectorAll("#itens-container .form-item-row").forEach(linha => {
-    const select = linha.querySelector(".item-produto");
-    const opcao = select.options[select.selectedIndex];
-    const valor = opcao ? parseFloat(opcao.dataset.valor) || 0 : 0;
-    const qtd = parseFloat(linha.querySelector(".item-qtd").value) || 0;
-    total += valor * qtd;
-  });
-  document.getElementById("form-total").textContent = "Total: " + fmtMoeda(total);
-}
-
 function abrirFormulario() {
-  const select = document.getElementById("f-cliente");
-  select.innerHTML = clientesCache.map(c => `<option value="${c.id}">${escHtml(c.nome)}</option>`).join("");
+  const lista = document.getElementById("lista-clientes-pedido");
 
-  const container = document.getElementById("itens-container");
-  container.innerHTML = "";
-  if (produtosCache.length > 0) container.appendChild(criarLinhaItem());
+  if (clientesCache.length === 0) {
+    lista.innerHTML = '<div class="empty">Cadastre um cliente antes de criar um pedido</div>';
+  } else {
+    lista.innerHTML = clientesCache.map(c => `
+      <div class="card" style="cursor:pointer" onclick="selecionarClientePedido('${c.id}')">
+        <div class="card-nome">${escHtml(c.nome)}</div>
+        ${c.telefone ? `<div class="card-info">📞 ${escHtml(c.telefone)}</div>` : ""}
+      </div>
+    `).join("");
+  }
 
-  document.getElementById("f-obs").value = "";
-  recalcularTotal();
   document.getElementById("form-overlay").style.display = "flex";
+}
+
+function selecionarClientePedido(clienteId) {
+  window.open("./cardapio/?cliente=" + clienteId, "_blank");
+  fecharFormulario();
 }
 
 function fecharFormulario() {
   document.getElementById("form-overlay").style.display = "none";
-}
-
-async function salvarPedido() {
-  const clienteId = document.getElementById("f-cliente").value;
-  if (!clienteId) {
-    alert("Cadastre um cliente antes de criar um pedido");
-    return;
-  }
-  const cliente = clientesCache.find(c => c.id === clienteId);
-  if (!cliente) {
-    alert("Cliente não encontrado");
-    return;
-  }
-
-  const itensInput = [];
-  document.querySelectorAll("#itens-container .form-item-row").forEach(linha => {
-    const produtoId = linha.querySelector(".item-produto").value;
-    const quantidade = parseFloat(linha.querySelector(".item-qtd").value) || 0;
-    if (produtoId && quantidade > 0) {
-      itensInput.push({ produtoId, quantidade });
-    }
-  });
-
-  if (itensInput.length === 0) {
-    alert("Inclua ao menos um item com quantidade maior que zero");
-    return;
-  }
-
-  const observacoes = document.getElementById("f-obs").value.trim();
-  const novoPedidoRef = colPedidos.doc();
-
-  try {
-    await db.runTransaction(async t => {
-      const produtoRefs = itensInput.map(it => colProdutos.doc(it.produtoId));
-      const produtoSnaps = await Promise.all(produtoRefs.map(ref => t.get(ref)));
-
-      let total = 0;
-      const itens = produtoSnaps.map((snap, idx) => {
-        if (!snap.exists) throw new Error("Produto não encontrado");
-        const produto = snap.data();
-        const quantidade = itensInput[idx].quantidade;
-        const subtotal = (produto.valor || 0) * quantidade;
-        total += subtotal;
-        return {
-          produtoId: snap.id,
-          produtoNome: produto.nome,
-          ud: produto.ud || "",
-          valorUnitario: produto.valor || 0,
-          quantidade,
-          subtotal
-        };
-      });
-
-      produtoSnaps.forEach((snap, idx) => {
-        const novoEstoque = (snap.data().estoque || 0) - itensInput[idx].quantidade;
-        t.update(produtoRefs[idx], { estoque: novoEstoque });
-      });
-
-      t.set(novoPedidoRef, {
-        clienteId,
-        clienteNome: cliente.nome,
-        status: "Pendente",
-        total,
-        observacoes,
-        pagamento: null,
-        criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
-        itens
-      });
-    });
-  } catch (e) {
-    alert(e.message || "Erro ao salvar pedido");
-    return;
-  }
-
-  fecharFormulario();
 }
 
 async function toggleStatus(id) {

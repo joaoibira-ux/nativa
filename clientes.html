@@ -75,7 +75,8 @@
         <button type="button" class="btn-cancel" onclick="fecharFormulario()">Cancelar</button>
         <button type="button" class="btn-save" onclick="salvarCliente()">Salvar</button>
       </div>
-      <div class="form-actions" id="acoes-cardapio" style="display:none">
+      <div class="form-actions grid-2" id="acoes-cardapio" style="display:none">
+        <button type="button" class="btn-cancel" id="btn-abrir-cardapio" onclick="abrirCardapio()">🌱 Cardápio</button>
         <button type="button" class="btn-cancel" id="btn-link-cardapio" onclick="copiarLinkCardapio()">🔗 Link</button>
         <button type="button" class="btn-cancel" id="btn-whatsapp-cardapio" onclick="enviarCardapioWhatsapp()">💬 WhatsApp</button>
         <button type="button" class="btn-cancel" id="btn-telegram-cardapio" onclick="enviarCardapioTelegram()">📨 Telegram</button>
@@ -89,7 +90,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="./app.js?v=20"></script>
-<script src="./clientes.js?v=9"></script>
+<script src="./app.js?v=21"></script>
+<script src="./clientes.js?v=10"></script>
 </body>
 </html>

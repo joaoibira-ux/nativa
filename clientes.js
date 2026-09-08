@@ -119,6 +119,12 @@ function linkCardapio(clienteId) {
   return "https://joaoibira-ux.github.io/nativa/cardapio/?cliente=" + clienteId;
 }
 
+function abrirCardapio() {
+  const c = clientesCache[clienteEditando];
+  if (!c) return;
+  window.open(linkCardapio(clienteEditando), "_blank");
+}
+
 function textoConviteCardapio(c) {
   const link = linkCardapio(clienteEditando);
   return `Olá${c.nome ? " " + c.nome.split(" ")[0] : ""}! Aqui está o cardápio da Nativa Cozinha Leve para você montar seu pedido: ${link}`;

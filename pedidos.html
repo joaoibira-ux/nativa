@@ -23,36 +23,20 @@
 
 <div id="form-overlay" class="form-overlay" style="display:none">
   <div class="form-scroll">
-    <form id="form" novalidate>
-      <div class="form-row">
-        <div class="form-group full">
-          <label>Cliente *</label>
-          <select id="f-cliente"></select>
-        </div>
-      </div>
-
-      <div id="itens-container"></div>
-      <button type="button" class="btn-add-item" onclick="adicionarItem()">+ Adicionar item</button>
-      <div class="form-total" id="form-total">Total: R$ 0,00</div>
-
-      <div class="form-row">
-        <div class="form-group full">
-          <label>Observações</label>
-          <textarea id="f-obs" rows="2" placeholder="Opcional"></textarea>
-        </div>
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="btn-cancel" onclick="fecharFormulario()">Cancelar</button>
-        <button type="button" class="btn-save" onclick="salvarPedido()">Salvar</button>
-      </div>
-    </form>
+    <header style="margin: -12px -14px 12px; border-radius: 0;">
+      <a class="btn-voltar-header" href="javascript:void(0)" onclick="fecharFormulario()">← Voltar</a>
+      <span class="titulo">Escolha o cliente</span>
+    </header>
+    <p style="font-size:0.82rem;color:#666;margin-bottom:12px;">
+      Ao escolher o cliente, o cardápio dele abre em outra aba para você montar o pedido clicando nas opções — igual ao que o cliente vê.
+    </p>
+    <div id="lista-clientes-pedido" class="lista" style="padding:0;"></div>
   </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="./app.js?v=20"></script>
-<script src="./pedidos.js?v=3"></script>
+<script src="./app.js?v=21"></script>
+<script src="./pedidos.js?v=4"></script>
 </body>
 </html>
