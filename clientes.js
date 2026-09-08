@@ -119,6 +119,11 @@ function linkCardapio(clienteId) {
   return "https://joaoibira-ux.github.io/nativa/cardapio/?cliente=" + clienteId;
 }
 
+function textoConviteCardapio(c) {
+  const link = linkCardapio(clienteEditando);
+  return `Olá${c.nome ? " " + c.nome.split(" ")[0] : ""}! Aqui está o cardápio da Nativa Cozinha Leve para você montar seu pedido: ${link}`;
+}
+
 function enviarCardapioTelegram() {
   const c = clientesCache[clienteEditando];
   if (!c) return;
@@ -127,6 +132,31 @@ function enviarCardapioTelegram() {
   const texto = `Olá${c.nome ? " " + c.nome.split(" ")[0] : ""}! Aqui está o cardápio da Nativa Cozinha Leve para você montar seu pedido:`;
   const urlTelegram = "https://t.me/share/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent(texto);
   window.open(urlTelegram, "_blank");
+}
+
+// Normaliza pro formato que o wa.me espera: só dígitos, com DDI 55 na frente.
+// Números de cliente são cadastrados como DDD+número (10 ou 11 dígitos, sem DDI).
+function formatarTelefoneWhatsapp(telefone) {
+  const digitos = String(telefone || "").replace(/\D/g, "");
+  if (!digitos) return null;
+  if (digitos.length === 10 || digitos.length === 11) return "55" + digitos;
+  if ((digitos.length === 12 || digitos.length === 13) && digitos.startsWith("55")) return digitos;
+  return null;
+}
+
+function enviarCardapioWhatsapp() {
+  const c = clientesCache[clienteEditando];
+  if (!c) return;
+
+  const numero = formatarTelefoneWhatsapp(c.telefone);
+  if (!numero) {
+    alert("Este cliente não tem um telefone válido cadastrado para abrir o WhatsApp.");
+    return;
+  }
+
+  const texto = textoConviteCardapio(c);
+  const urlWhatsapp = "https://wa.me/" + numero + "?text=" + encodeURIComponent(texto);
+  window.open(urlWhatsapp, "_blank");
 }
 
 async function copiarLinkCardapio() {
