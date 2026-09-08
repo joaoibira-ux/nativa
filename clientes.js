@@ -107,6 +107,7 @@ function definirModoFormulario(visualizacao) {
   document.getElementById("row-editar-localizacao").style.display = visualizacao ? "none" : "";
   document.getElementById("acoes-edicao").style.display = visualizacao ? "none" : "";
   document.getElementById("acoes-visualizacao").style.display = visualizacao ? "" : "none";
+  document.getElementById("acoes-cardapio").style.display = visualizacao ? "" : "none";
 
   if (!visualizacao) {
     document.getElementById("row-ver-localizacao").style.display = "none";
@@ -114,11 +115,25 @@ function definirModoFormulario(visualizacao) {
   }
 }
 
+function linkCardapio(clienteId) {
+  return "https://joaoibira-ux.github.io/nativa/cardapio/?cliente=" + clienteId;
+}
+
+function enviarCardapioTelegram() {
+  const c = clientesCache[clienteEditando];
+  if (!c) return;
+
+  const link = linkCardapio(clienteEditando);
+  const texto = `Olá${c.nome ? " " + c.nome.split(" ")[0] : ""}! Aqui está o cardápio da Nativa Cozinha Leve para você montar seu pedido:`;
+  const urlTelegram = "https://t.me/share/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent(texto);
+  window.open(urlTelegram, "_blank");
+}
+
 async function copiarLinkCardapio() {
   const c = clientesCache[clienteEditando];
   if (!c) return;
 
-  const link = "https://joaoibira-ux.github.io/nativa/cardapio/?cliente=" + clienteEditando;
+  const link = linkCardapio(clienteEditando);
   const btn = document.getElementById("btn-link-cardapio");
 
   try {
