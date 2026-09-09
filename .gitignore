@@ -2,3 +2,4 @@ node_modules/
 local-server/data/*.db
 local-server/server.log
 .firebase/
+.cardapio-pdf-cache/
