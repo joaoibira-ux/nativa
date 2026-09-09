@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.02";
+const VERSAO_CARDAPIO = "1.03";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -16,11 +16,14 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 const CARRINHO_KEY = "nativa_cardapio_carrinho";
+const CLIENTE_KEY = "nativa_cardapio_cliente";
 
 let clienteId = null;
 let clienteNome = "";
 let categorias = [];
 let carrinho = [];
+let todosClientes = [];
+let categoriaPendente = null;
 
 const appEl = document.getElementById("app");
 
@@ -90,32 +93,6 @@ function salvarCarrinho() {
 async function init() {
   renderLoading();
 
-  clienteId = new URLSearchParams(window.location.search).get("cliente");
-  if (!clienteId) {
-    renderErro(
-      "Link inválido",
-      "Este link não tem um cliente associado. Peça ao vendedor um link personalizado do cardápio."
-    );
-    return;
-  }
-
-  let clienteSnap;
-  try {
-    clienteSnap = await db.collection("clientes").doc(clienteId).get();
-  } catch (e) {
-    renderErro("Erro ao carregar", "Não foi possível conectar. Verifique sua internet e tente novamente.");
-    return;
-  }
-
-  if (!clienteSnap.exists) {
-    renderErro("Cliente não encontrado", "Este link não é mais válido. Peça um novo link ao vendedor.");
-    return;
-  }
-
-  clienteNome = clienteSnap.data().nome || "";
-  const headerCliente = document.getElementById("header-cliente");
-  if (headerCliente) headerCliente.textContent = "Pedido para\n" + clienteNome;
-
   try {
     const snap = await db.collection("cardapioCategorias").orderBy("ordem").get();
     categorias = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -129,7 +106,39 @@ async function init() {
     return;
   }
 
+  // Link personalizado (veio dos botões do ERP) já identifica o cliente.
+  const clienteIdUrl = new URLSearchParams(window.location.search).get("cliente");
+  if (clienteIdUrl) {
+    try {
+      const clienteSnap = await db.collection("clientes").doc(clienteIdUrl).get();
+      if (clienteSnap.exists) {
+        definirClienteIdentificado(clienteIdUrl, clienteSnap.data().nome || "");
+      }
+    } catch (e) {
+      // Sem conexão pra validar agora — segue sem identificar, tenta de novo ao montar.
+    }
+  }
+
+  // Link encaminhado sem passar pelo sistema (ou sem cliente reconhecido):
+  // tenta recuperar identificação salva nessa sessão.
+  if (!clienteId) {
+    try {
+      const salvo = JSON.parse(sessionStorage.getItem(CLIENTE_KEY) || "null");
+      if (salvo && salvo.id && salvo.nome) definirClienteIdentificado(salvo.id, salvo.nome);
+    } catch (e) {}
+  }
+
   renderCardapio();
+}
+
+function definirClienteIdentificado(id, nome) {
+  clienteId = id;
+  clienteNome = nome;
+  try {
+    sessionStorage.setItem(CLIENTE_KEY, JSON.stringify({ id, nome }));
+  } catch (e) {}
+  const headerCliente = document.getElementById("header-cliente");
+  if (headerCliente) headerCliente.textContent = "Pedido para\n" + clienteNome;
 }
 
 function renderLoading() {
@@ -220,6 +229,12 @@ function atualizarFabCarrinho() {
 let montagemAtual = null; // { categoria, selecoes: [[]], quantidade }
 
 function abrirMontagem(categoriaId) {
+  if (!clienteId) {
+    categoriaPendente = categoriaId;
+    abrirIdentificacaoCliente();
+    return;
+  }
+
   const categoria = categorias.find(c => c.id === categoriaId);
   if (!categoria) return;
 
@@ -396,7 +411,172 @@ function confirmarMontagem() {
 
 function fecharMontagem() {
   montagemAtual = null;
+  categoriaPendente = null;
   renderCardapio();
+}
+
+/* ---------------- Identificação / cadastro de cliente ---------------- */
+
+async function abrirIdentificacaoCliente() {
+  if (todosClientes.length === 0) {
+    appEl.innerHTML = `
+      <div class="tela-central">
+        <div class="icone">🌱</div>
+        <h2 class="serif">Um instante...</h2>
+      </div>
+    `;
+    try {
+      const snap = await db.collection("clientes").orderBy("nome").get();
+      todosClientes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      todosClientes = [];
+    }
+  }
+  renderIdentificacaoCliente("");
+}
+
+function renderIdentificacaoCliente(termoBusca) {
+  const termo = termoBusca.trim().toLowerCase();
+  const resultados = termo.length >= 2
+    ? todosClientes.filter(c => (c.nome || "").toLowerCase().includes(termo)).slice(0, 8)
+    : [];
+
+  appEl.innerHTML = `
+    <div class="overlay">
+      <div class="overlay-header">
+        <span class="titulo">Identifique-se</span>
+        <button class="btn-fechar" onclick="cancelarIdentificacao()">✕</button>
+      </div>
+      <div class="overlay-scroll">
+        <p style="font-size:0.85rem;color:#6b5638;margin-bottom:16px;">
+          Antes de montar seu pedido, digite seu nome para localizarmos seu cadastro.
+        </p>
+        <div class="grupo-bloco">
+          <input type="text" class="obs-input" id="busca-cliente-input" placeholder="Digite seu nome completo..."
+            value="${escHtml(termoBusca)}" oninput="onBuscaClienteInput(this.value)" autofocus />
+        </div>
+        <div id="resultados-busca-cliente">
+          ${renderResultadosBusca(termo, resultados)}
+        </div>
+      </div>
+    </div>
+  `;
+  const input = document.getElementById("busca-cliente-input");
+  if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+}
+
+function renderResultadosBusca(termo, resultados) {
+  if (termo.length < 2) return "";
+
+  const listaHtml = resultados.length > 0 ? `
+    <div class="opcoes-lista" style="margin-bottom:14px;">
+      ${resultados.map(c => `
+        <div class="opcao-item" onclick="selecionarClienteExistente('${c.id}')">
+          <span class="opcao-marca"></span>
+          <span class="opcao-nome">${escHtml(c.nome)}${c.telefone ? ` <span style="color:#a3823f;font-size:0.78rem;">· ${escHtml(c.telefone)}</span>` : ""}</span>
+        </div>
+      `).join("")}
+    </div>
+  ` : `<p style="font-size:0.82rem;color:#a3823f;margin-bottom:14px;">Nenhum cadastro encontrado com esse nome.</p>`;
+
+  return `
+    ${listaHtml}
+    <button class="btn-confirmar-item" style="width:100%;" onclick="abrirCadastroNovoCliente()">
+      Não me encontrei — quero me cadastrar
+    </button>
+  `;
+}
+
+function onBuscaClienteInput(valor) {
+  const termo = valor.trim().toLowerCase();
+  document.getElementById("resultados-busca-cliente").innerHTML = renderResultadosBusca(
+    termo,
+    termo.length >= 2 ? todosClientes.filter(c => (c.nome || "").toLowerCase().includes(termo)).slice(0, 8) : []
+  );
+}
+
+function cancelarIdentificacao() {
+  categoriaPendente = null;
+  renderCardapio();
+}
+
+function selecionarClienteExistente(id) {
+  const c = todosClientes.find(x => x.id === id);
+  if (!c) return;
+  definirClienteIdentificado(id, c.nome || "");
+  retomarAposIdentificacao();
+}
+
+function abrirCadastroNovoCliente() {
+  const inputBusca = document.getElementById("busca-cliente-input");
+  const nomeSugerido = inputBusca ? inputBusca.value.trim() : "";
+  appEl.innerHTML = `
+    <div class="overlay">
+      <div class="overlay-header">
+        <span class="titulo">Novo cadastro</span>
+        <button class="btn-fechar" onclick="cancelarIdentificacao()">✕</button>
+      </div>
+      <div class="overlay-scroll">
+        <div class="grupo-bloco">
+          <div class="grupo-titulo" style="margin-bottom:8px;">Nome completo *</div>
+          <input type="text" class="obs-input" id="novo-cliente-nome" placeholder="Seu nome completo" value="${escHtml(nomeSugerido || "")}" />
+        </div>
+        <div class="grupo-bloco">
+          <div class="grupo-titulo" style="margin-bottom:8px;">Telefone</div>
+          <input type="tel" class="obs-input" id="novo-cliente-telefone" placeholder="(00) 00000-0000" />
+        </div>
+        <div class="grupo-bloco">
+          <div class="grupo-titulo" style="margin-bottom:8px;">Endereço</div>
+          <input type="text" class="obs-input" id="novo-cliente-endereco" placeholder="Rua, número, bairro, cidade" />
+        </div>
+      </div>
+      <div class="overlay-footer">
+        <button class="btn-confirmar-item" onclick="salvarNovoClienteCardapio()">Salvar e continuar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("novo-cliente-nome").focus();
+}
+
+async function salvarNovoClienteCardapio() {
+  const nome = document.getElementById("novo-cliente-nome").value.trim();
+  if (!nome) {
+    alert("Informe seu nome completo.");
+    return;
+  }
+  const telefone = document.getElementById("novo-cliente-telefone").value.trim();
+  const endereco = document.getElementById("novo-cliente-endereco").value.trim();
+
+  const btn = document.querySelector(".btn-confirmar-item");
+  if (btn) { btn.disabled = true; btn.textContent = "Salvando..."; }
+
+  try {
+    const ref = await db.collection("clientes").add({
+      nome,
+      telefone,
+      endereco,
+      observacoes: "",
+      latitude: null,
+      longitude: null,
+      criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    todosClientes.push({ id: ref.id, nome, telefone, endereco });
+    definirClienteIdentificado(ref.id, nome);
+    retomarAposIdentificacao();
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = "Salvar e continuar"; }
+    alert("Não foi possível salvar seu cadastro. Verifique sua internet e tente novamente.");
+  }
+}
+
+function retomarAposIdentificacao() {
+  if (categoriaPendente) {
+    const cat = categoriaPendente;
+    categoriaPendente = null;
+    abrirMontagem(cat);
+  } else {
+    renderCardapio();
+  }
 }
 
 function adicionarEspecialDireto(categoriaId, especialIndex) {
