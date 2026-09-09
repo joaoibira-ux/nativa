@@ -51,6 +51,7 @@ header {
   border-bottom: 1px solid #7a5a20;
 }
 
+.header-logo { width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; }
 .header-titulo { flex: 1; }
 .header-titulo .marca { font-family: "Playfair Display", Georgia, serif; font-size: 1.15rem; font-weight: 800; letter-spacing: 2px; color: #e8c473; }
 .header-titulo .sub { font-size: 0.65rem; color: #b89a63; margin-top: 1px; letter-spacing: 0.05em; }
@@ -126,10 +127,22 @@ header {
   background: linear-gradient(180deg, #fffdf7, #fbf3e0);
   border: 1px solid #d9b877;
   border-radius: 16px;
-  padding: 16px;
+  overflow: hidden;
   margin-bottom: 16px;
   box-shadow: 0 3px 10px rgba(60,40,10,0.10);
   position: relative;
+}
+
+.categoria-foto {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-bottom: 1px solid #d9b877;
+}
+
+.categoria-corpo {
+  padding: 16px;
 }
 
 .categoria-topo {

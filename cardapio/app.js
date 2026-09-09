@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.01";
+const VERSAO_CARDAPIO = "1.02";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -50,6 +50,17 @@ function iconeCategoria(nome) {
     "Wraps Congelados": "🌯"
   };
   return mapa[nome] || "🌿";
+}
+
+function fotoCategoria(nome) {
+  const mapa = {
+    "Iogurte Natural Artesanal": "./img/foto_iogurte.jpg",
+    "Marmitas Fit Congeladas": "./img/foto_marmita_fit.jpg",
+    "Marmita Fit de Camarão": "./img/foto_camarao.jpg",
+    "Salada Proteica no Copo": "./img/foto_salada.jpg",
+    "Wraps Congelados": "./img/foto_wraps.jpg"
+  };
+  return mapa[nome] || null;
 }
 
 function iconeGrupo(nome) {
@@ -158,21 +169,27 @@ function renderCardapio() {
   `;
 
   const lista = document.getElementById("lista-categorias");
-  lista.innerHTML = categorias.map(cat => `
+  lista.innerHTML = categorias.map(cat => {
+    const foto = fotoCategoria(cat.nome);
+    return `
     <div class="categoria-card">
-      <div class="categoria-topo">
-        <div class="icone-circulo">${iconeCategoria(cat.nome)}</div>
-        <div class="categoria-nome">${escHtml(cat.nome)}</div>
+      ${foto ? `<img class="categoria-foto" src="${foto}" alt="${escHtml(cat.nome)}" loading="lazy" />` : ""}
+      <div class="categoria-corpo">
+        <div class="categoria-topo">
+          <div class="icone-circulo">${iconeCategoria(cat.nome)}</div>
+          <div class="categoria-nome">${escHtml(cat.nome)}</div>
+        </div>
+        ${cat.subtitulo ? `<div class="categoria-sub">${escHtml(cat.subtitulo)}</div>` : ""}
+        <div class="categoria-meta">
+          ${cat.tamanho ? `<span>⚖️ ${escHtml(cat.tamanho)}</span>` : ""}
+          ${cat.validade ? `<span>❄️ ${escHtml(cat.validade)}</span>` : ""}
+        </div>
+        ${cat.precoBase != null ? `<div class="categoria-preco serif">${fmtMoeda(cat.precoBase)} <span>a partir de</span></div>` : ""}
+        <button class="btn-montar" onclick="abrirMontagem('${cat.id}')">Montar pedido</button>
       </div>
-      ${cat.subtitulo ? `<div class="categoria-sub">${escHtml(cat.subtitulo)}</div>` : ""}
-      <div class="categoria-meta">
-        ${cat.tamanho ? `<span>⚖️ ${escHtml(cat.tamanho)}</span>` : ""}
-        ${cat.validade ? `<span>❄️ ${escHtml(cat.validade)}</span>` : ""}
-      </div>
-      ${cat.precoBase != null ? `<div class="categoria-preco serif">${fmtMoeda(cat.precoBase)} <span>a partir de</span></div>` : ""}
-      <button class="btn-montar" onclick="abrirMontagem('${cat.id}')">Montar pedido</button>
     </div>
-  `).join("");
+  `;
+  }).join("");
 
   atualizarFabCarrinho();
 }
