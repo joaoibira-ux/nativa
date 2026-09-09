@@ -84,6 +84,9 @@ header {
   flex: 1;
   overflow-y: auto;
   padding: 20px 14px 100px;
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .intro {
@@ -136,7 +139,7 @@ header {
 .categoria-foto {
   display: block;
   width: 100%;
-  height: 150px;
+  height: 240px;
   object-fit: cover;
   border-bottom: 1px solid #d9b877;
 }
