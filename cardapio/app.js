@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.00";
+const VERSAO_CARDAPIO = "1.01";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -39,6 +39,26 @@ function escHtml(s) {
 
 function fmtMoeda(v) {
   return "R$ " + Number(v || 0).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function iconeCategoria(nome) {
+  const mapa = {
+    "Iogurte Natural Artesanal": "🍶",
+    "Marmitas Fit Congeladas": "🍱",
+    "Marmita Fit de Camarão": "🍤",
+    "Salada Proteica no Copo": "🥗",
+    "Wraps Congelados": "🌯"
+  };
+  return mapa[nome] || "🌿";
+}
+
+function iconeGrupo(nome) {
+  if (/prote[íi]na|tipo|camar[ãa]o/i.test(nome)) return "🍗";
+  if (/acompanhamento/i.test(nome)) return "🥗";
+  if (/geleia/i.test(nome)) return "🍇";
+  if (/ingrediente/i.test(nome)) return "🥬";
+  if (/molho/i.test(nome)) return "🥣";
+  return "🌿";
 }
 
 function carregarCarrinho() {
@@ -114,7 +134,7 @@ function renderErro(titulo, msg) {
   appEl.innerHTML = `
     <div class="tela-central">
       <div class="icone">⚠️</div>
-      <h2>${escHtml(titulo)}</h2>
+      <h2 class="serif">${escHtml(titulo)}</h2>
       <p>${escHtml(msg)}</p>
     </div>
   `;
@@ -126,7 +146,9 @@ function renderCardapio() {
   appEl.innerHTML = `
     <div class="conteudo">
       <div class="intro">
-        <div class="marca-grande">CARDÁPIO</div>
+        <div class="leaf">🌿</div>
+        <div class="marca-grande serif">CARDÁPIO</div>
+        <div class="separador"><span class="diamante"></span></div>
         <div class="marca-sub">VIDA SAUDÁVEL, SE ALIMENTE LEVE</div>
         <div class="frase">Toque em um item para montar do seu jeito.</div>
       </div>
@@ -138,13 +160,16 @@ function renderCardapio() {
   const lista = document.getElementById("lista-categorias");
   lista.innerHTML = categorias.map(cat => `
     <div class="categoria-card">
-      <div class="categoria-nome">${escHtml(cat.nome)}</div>
+      <div class="categoria-topo">
+        <div class="icone-circulo">${iconeCategoria(cat.nome)}</div>
+        <div class="categoria-nome">${escHtml(cat.nome)}</div>
+      </div>
       ${cat.subtitulo ? `<div class="categoria-sub">${escHtml(cat.subtitulo)}</div>` : ""}
       <div class="categoria-meta">
         ${cat.tamanho ? `<span>⚖️ ${escHtml(cat.tamanho)}</span>` : ""}
         ${cat.validade ? `<span>❄️ ${escHtml(cat.validade)}</span>` : ""}
       </div>
-      ${cat.precoBase != null ? `<div class="categoria-preco">${fmtMoeda(cat.precoBase)} <span>a partir de</span></div>` : ""}
+      ${cat.precoBase != null ? `<div class="categoria-preco serif">${fmtMoeda(cat.precoBase)} <span>a partir de</span></div>` : ""}
       <button class="btn-montar" onclick="abrirMontagem('${cat.id}')">Montar pedido</button>
     </div>
   `).join("");
@@ -220,8 +245,9 @@ function renderMontagem() {
 
     return `
       <div class="grupo-bloco">
-        <div class="grupo-titulo">
-          <span>${escHtml(grupo.nome)}</span>
+        <div class="grupo-cabecalho">
+          <div class="icone-circulo pequeno">${iconeGrupo(grupo.nome)}</div>
+          <span class="grupo-titulo">${escHtml(grupo.nome)}</span>
           <span class="grupo-contador ${completo ? "completo" : ""}">${rotuloContador}</span>
         </div>
         <div class="opcoes-lista">${itensHtml}</div>
@@ -230,14 +256,20 @@ function renderMontagem() {
   }).join("");
 
   const especiaisHtml = (categoria.especiais && categoria.especiais.length) ? `
-    <div class="especiais-titulo">Opções especiais (prontas)</div>
-    ${categoria.especiais.map((esp, ei) => `
-      <div class="especial-item">
-        <span class="especial-nome">${escHtml(esp.nome)}</span>
-        <span class="especial-preco">${fmtMoeda(esp.preco)}</span>
-        <button class="btn-add-especial" onclick="adicionarEspecialDireto('${categoria.id}', ${ei})">Adicionar</button>
-      </div>
-    `).join("")}
+    <div class="especiais-titulo">
+      <div class="icone-circulo pequeno">⭐</div>
+      <span>Opções especiais (prontas)</span>
+    </div>
+    <div class="especiais-grid">
+      ${categoria.especiais.map((esp, ei) => `
+        <div class="especial-card">
+          <div class="icone-circulo">🍽️</div>
+          <div class="especial-nome">${escHtml(esp.nome)}</div>
+          <div class="especial-preco">${fmtMoeda(esp.preco)}</div>
+          <button class="btn-add-especial" onclick="adicionarEspecialDireto('${categoria.id}', ${ei})">Adicionar</button>
+        </div>
+      `).join("")}
+    </div>
   ` : "";
 
   const precoAtual = calcularPrecoItem(categoria, montagemAtual.selecoes);
@@ -523,7 +555,7 @@ function renderSucesso(total) {
   appEl.innerHTML = `
     <div class="tela-central">
       <div class="sucesso-icone">✅</div>
-      <h2>Pedido enviado!</h2>
+      <h2 class="serif">Pedido enviado!</h2>
       <p>Seu pedido foi registrado. Para confirmar e entrar em produção, realize o pagamento via PIX abaixo.</p>
       <div class="pix-box">
         <div class="pix-label">Chave PIX (CPF)</div>
