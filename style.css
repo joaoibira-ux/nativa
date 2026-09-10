@@ -510,9 +510,11 @@ body.menu-body {
 
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #1a3322; }
 
-.form-group input[readonly] {
+.form-group input[readonly], .form-group select:disabled {
   background: #f0f0f0;
   color: #555;
+  opacity: 1;
+  -webkit-text-fill-color: #555;
 }
 
 .ver-loc-wrap {

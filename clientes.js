@@ -33,6 +33,7 @@ function render(clientes) {
         <div class="card-nome">${escHtml(c.nome)}</div>
         ${c.telefone ? `<div class="card-info">📞 ${escHtml(c.telefone)}</div>` : ""}
         ${c.endereco ? `<div class="card-info">🏠 ${escHtml(c.endereco)}</div>` : ""}
+        ${c.formaPagamento ? `<div class="card-info">💳 ${escHtml(c.formaPagamento)}</div>` : ""}
         ${loc}
         ${c.observacoes ? `<div class="card-obs">${escHtml(c.observacoes)}</div>` : ""}
       </div>
@@ -52,6 +53,7 @@ function abrirFormulario(id) {
     document.getElementById("f-nome").value = c.nome || "";
     document.getElementById("f-telefone").value = c.telefone || "";
     document.getElementById("f-endereco").value = c.endereco || "";
+    document.getElementById("f-pagamento").value = c.formaPagamento || "";
     document.getElementById("f-obs").value = c.observacoes || "";
     if (c.latitude != null && c.longitude != null) {
       latAtual = c.latitude;
@@ -82,6 +84,7 @@ function visualizarCliente(id) {
   document.getElementById("f-nome").value = c.nome || "";
   document.getElementById("f-telefone").value = c.telefone || "";
   document.getElementById("f-endereco").value = c.endereco || "";
+  document.getElementById("f-pagamento").value = c.formaPagamento || "";
   document.getElementById("f-obs").value = c.observacoes || "";
   document.getElementById("f-loc-link").value = "";
   document.getElementById("loc-status").textContent = "";
@@ -102,6 +105,7 @@ function definirModoFormulario(visualizacao) {
   ["f-nome", "f-telefone", "f-endereco", "f-obs"].forEach(id => {
     document.getElementById(id).readOnly = visualizacao;
   });
+  document.getElementById("f-pagamento").disabled = visualizacao;
 
   document.getElementById("row-colar-localizacao").style.display = visualizacao ? "none" : "";
   document.getElementById("row-editar-localizacao").style.display = visualizacao ? "none" : "";
@@ -273,6 +277,7 @@ async function salvarCliente() {
     nome,
     telefone: document.getElementById("f-telefone").value.trim(),
     endereco: document.getElementById("f-endereco").value.trim(),
+    formaPagamento: document.getElementById("f-pagamento").value,
     observacoes: document.getElementById("f-obs").value.trim(),
     latitude: latAtual,
     longitude: lngAtual

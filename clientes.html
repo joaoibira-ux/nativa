@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Clientes" />
   <title>NATIVA - Clientes</title>
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./style.css?v=15" />
+  <link rel="stylesheet" href="./style.css?v=16" />
 </head>
 <body>
 
@@ -40,6 +40,17 @@
         <div class="form-group full">
           <label>Endereço</label>
           <input type="text" id="f-endereco" placeholder="Rua, número, bairro, cidade" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Forma de pagamento</label>
+          <select id="f-pagamento">
+            <option value="">Não informado</option>
+            <option value="Pix">Pix</option>
+            <option value="Cartão de Crédito">Cartão de Crédito</option>
+            <option value="Carteira">Carteira</option>
+          </select>
         </div>
       </div>
       <div class="form-row" id="row-colar-localizacao">
@@ -90,7 +101,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="./app.js?v=22"></script>
-<script src="./clientes.js?v=10"></script>
+<script src="./app.js?v=23"></script>
+<script src="./clientes.js?v=11"></script>
 </body>
 </html>
