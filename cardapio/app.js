@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.11";
+const VERSAO_CARDAPIO = "1.12";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -67,6 +67,63 @@ function fotoCategoria(nome) {
     "Wraps Congelados": "./img/foto_wraps.jpg"
   };
   return mapa[nome] || null;
+}
+
+// Fotos por opção de escolha dentro do assistente (wizard). Duas camadas:
+// específicas (mesmo nome de opção, foto diferente por categoria — ex:
+// "Frango" na salada é uma foto, "Frango" no wrap é outra) e genéricas
+// (mesma foto pra qualquer categoria que use aquele nome de opção).
+const FOTOS_OPCOES_ESPECIFICAS = {
+  "salada-proteica::Frango": "salada_frango.jpg",
+  "salada-proteica::Carne de patinho": "salada_carne_patinho.jpg",
+  "salada-proteica::Camarão": "salada_camarao.jpg",
+  "wraps::Frango": "wrap_frango.jpg",
+  "wraps::Carne de patinho moída": "wrap_carne_moida.jpg"
+};
+
+const FOTOS_OPCOES_GENERICAS = {
+  // Ingredientes da salada
+  "Acelga": "acelga.jpg", "Alface americana": "alface_americana.jpg", "Rúcula": "rucula.jpg",
+  "Mix de folhas": "mix_de_folhas.jpg", "Tomate cereja": "tomate_cereja.jpg", "Cebola roxa": "cebola_roxa.jpg",
+  "Cenoura ralada": "cenoura_ralada.jpg", "Beterraba ralada": "beterraba_ralada.jpg", "Uva verde": "uva_verde.jpg",
+  "Uva roxa": "uva_roxa.jpg", "Manga": "manga.jpg", "Uva passa": "uva_passa.jpg",
+  "Brócolis": "brocolis.jpg", "Milho verde": "milho_verde.jpg", "Ervilha": "ervilha.jpg",
+  "Lentilha": "lentilha.jpg", "Grão-de-bico": "grao_de_bico.jpg", "Tomate seco": "tomate_seco.jpg",
+  "Queijo parmesão em lascas": "queijo_parmesao.jpg", "Queijo muçarela light": "queijo_mucarela.jpg",
+  "Palmito": "palmito.jpg", "Champignon": "champignon.jpg",
+  // Molhos
+  "Mostarda e mel": "molho_mostarda_mel.jpg", "César": "molho_cesar.jpg",
+  "Maracujá com iogurte natural": "molho_maracuja_iogurte.jpg",
+  // Tipos de camarão
+  "Camarão aos três queijos": "camarao_tres_queijos.jpg", "Camarão na moranga": "camarao_moranga.jpg",
+  "Strogonoff de camarão": "camarao_strogonoff.jpg", "Camarão ao molho de tomate": "camarao_molho_tomate.jpg",
+  // Proteínas de marmita fit
+  "Carne de patinho grelhada": "carne_patinho_grelhada.jpg", "Carne moída de patinho": "carne_moida_patinho.jpg",
+  "Almôndegas fit": "almondegas_fit.jpg", "Frango desfiado": "frango_desfiado.jpg",
+  "Peito de frango grelhado": "peito_frango_grelhado.jpg", "Frango em cubos na laranja e alecrim": "frango_cubos_laranja_alecrim.jpg",
+  "Strogonoff de frango fit": "strogonoff_frango.jpg", "Strogonoff de carne fit": "strogonoff_carne.jpg",
+  // Acompanhamentos
+  "Arroz branco": "arroz_branco.jpg", "Arroz integral": "arroz_integral.jpg",
+  "Arroz integral de 7 grãos": "arroz_7_graos.jpg", "Arroz de brócolis": "arroz_brocolis.jpg",
+  "Arroz de alho": "arroz_alho.jpg", "Feijão macassar": "feijao_macassar.jpg",
+  "Feijão mulatinho": "feijao_mulatinho.jpg", "Mix de legumes no vapor": "legumes_vapor.jpg",
+  "Mix de legumes refogado": "legumes_refogado.jpg", "Brócolis no vapor": "brocolis_vapor.jpg",
+  "Batata sauté fit": "batata_saute.jpg", "Batata doce rústica": "batata_doce_rustica.jpg",
+  "Purê de batata inglesa": "pure_batata_inglesa.jpg", "Purê de batata doce": "pure_batata_doce.jpg",
+  "Purê de jerimum": "pure_jerimum.jpg", "Purê de macaxeira": "pure_macaxeira.jpg",
+  "Macarrão penne integral": "macarrao_penne.jpg", "Macarrão de argolinha integral": "macarrao_argolinha.jpg",
+  // Geleias
+  "Morango": "geleia_morango.jpg", "Frutas vermelhas": "geleia_frutas_vermelhas.jpg",
+  "Manga com maracujá": "geleia_manga_maracuja.jpg",
+  "Goiaba": "geleia_goiaba.jpg", "Ameixa": "geleia_ameixa.jpg"
+};
+
+function fotoOpcao(categoriaId, nomeOpcao) {
+  const especifica = FOTOS_OPCOES_ESPECIFICAS[categoriaId + "::" + nomeOpcao];
+  if (especifica) return "./img/opcoes/" + especifica;
+  const generica = FOTOS_OPCOES_GENERICAS[nomeOpcao];
+  if (generica) return "./img/opcoes/" + generica;
+  return null;
 }
 
 function iconeGrupo(nome) {
@@ -327,8 +384,10 @@ function renderPassoMontagem() {
     const atingiuMax = grupo.max > 1 && sel.length >= grupo.max && !marcado;
     const precoOpt = grupo.opcoesComPreco ? grupo.opcoesComPreco.find(o => o.nome === nome) : null;
     const quadrado = grupo.max > 1 ? "1" : "0";
+    const foto = fotoOpcao(categoria.id, nome);
     return `
       <div class="opcao-item ${marcado ? "selecionado" : ""} ${atingiuMax ? "desabilitado" : ""}" data-quadrado="${quadrado}" onclick="toggleOpcaoPasso('${escHtml(nome).replace(/'/g, "\\'")}')">
+        ${foto ? `<img class="opcao-foto" src="${foto}" alt="" loading="lazy" />` : ""}
         <span class="opcao-marca">${marcado ? "✓" : ""}</span>
         <span class="opcao-nome">${escHtml(nome)}</span>
         ${precoOpt ? `<span class="opcao-preco">${grupo.defineBasePreco ? fmtMoeda(precoOpt.preco) : "+" + fmtMoeda(precoOpt.preco)}</span>` : (grupo.precoPorItem ? `<span class="opcao-preco">+${fmtMoeda(grupo.precoPorItem)}</span>` : "")}

@@ -306,8 +306,10 @@ header {
   align-content: start;
   padding-bottom: 10px;
 }
-.opcoes-grid .opcao-item { padding: 10px; font-size: 0.8rem; }
-.opcoes-grid .opcao-nome { line-height: 1.25; }
+.opcoes-grid .opcao-item { padding: 8px; font-size: 0.76rem; gap: 7px; }
+.opcoes-grid .opcao-nome { line-height: 1.2; }
+.opcoes-grid .opcao-foto { width: 30px; height: 30px; }
+.opcoes-grid .opcao-marca { width: 16px; height: 16px; }
 
 .link-especiais {
   flex-shrink: 0;
@@ -378,6 +380,15 @@ header {
   box-shadow: 0 1px 4px rgba(184,134,47,0.18);
 }
 .opcao-item.desabilitado { opacity: 0.4; pointer-events: none; }
+
+.opcao-foto {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid #d9b877;
+  flex-shrink: 0;
+}
 
 .opcao-marca {
   width: 19px;
