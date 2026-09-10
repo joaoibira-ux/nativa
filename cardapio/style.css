@@ -124,15 +124,16 @@ header {
   flex-shrink: 0;
 }
 .icone-circulo.pequeno { width: 34px; height: 34px; font-size: 1rem; }
+.categoria-topo .icone-circulo { width: 40px; height: 40px; font-size: 1.15rem; }
 
 /* ---- Cards de categoria ---- */
 .categoria-card {
-  background: linear-gradient(180deg, #fffdf7, #fbf3e0);
-  border: 1px solid #d9b877;
-  border-radius: 16px;
+  background: linear-gradient(165deg, #f3e6c4, #e9d3a3);
+  border: 1px solid #c9a668;
+  border-radius: 20px;
   overflow: hidden;
-  margin-bottom: 16px;
-  box-shadow: 0 3px 10px rgba(60,40,10,0.10);
+  margin-bottom: 15px;
+  box-shadow: 0 4px 14px rgba(60,40,10,0.14), inset 0 0 0 1px rgba(255,255,255,0.4);
   position: relative;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -145,14 +146,14 @@ header {
 .categoria-card::after {
   content: "›";
   position: absolute;
-  right: 16px;
-  bottom: 16px;
-  width: 30px;
-  height: 30px;
+  right: 14px;
+  bottom: 13px;
+  width: 27px;
+  height: 27px;
   border-radius: 50%;
   background: #2e2013;
   color: #e8c473;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -161,38 +162,44 @@ header {
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
+.categoria-foto-moldura {
+  padding: 9px 9px 0;
+}
+
 .categoria-foto {
   display: block;
   width: 100%;
-  height: 240px;
+  height: 195px;
   object-fit: cover;
-  border-bottom: 1px solid #d9b877;
+  border-radius: 13px;
+  border: 1px solid rgba(60,40,10,0.18);
+  box-shadow: 0 1px 3px rgba(60,40,10,0.15);
 }
 
 .categoria-corpo {
-  padding: 16px;
-  padding-right: 56px;
+  padding: 14px;
+  padding-right: 50px;
 }
 
 .categoria-topo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
+  gap: 10px;
+  margin-bottom: 3px;
 }
 
 .categoria-nome {
   font-family: "Playfair Display", Georgia, serif;
-  font-size: 1.15rem;
+  font-size: 1.08rem;
   font-weight: 800;
   color: #2e2013;
   line-height: 1.2;
 }
 
 .categoria-sub {
-  font-size: 0.8rem;
-  color: #7a6440;
-  margin-top: 6px;
+  font-size: 0.77rem;
+  color: #6b4f22;
+  margin-top: 5px;
   line-height: 1.4;
 }
 
@@ -200,16 +207,16 @@ header {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 10px;
-  font-size: 0.7rem;
-  color: #8a6d28;
+  margin-top: 9px;
+  font-size: 0.68rem;
+  color: #6b4f22;
   font-weight: 600;
 }
 
 .categoria-preco {
-  margin-top: 10px;
+  margin-top: 9px;
   font-family: "Playfair Display", Georgia, serif;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: #a3762a;
 }

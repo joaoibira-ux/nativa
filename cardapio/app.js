@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.07";
+const VERSAO_CARDAPIO = "1.08";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -184,7 +184,7 @@ function renderCardapio() {
     const foto = fotoCategoria(cat.nome);
     return `
     <div class="categoria-card" onclick="abrirMontagem('${cat.id}')">
-      ${foto ? `<img class="categoria-foto" src="${foto}" alt="${escHtml(cat.nome)}" loading="lazy" />` : ""}
+      ${foto ? `<div class="categoria-foto-moldura"><img class="categoria-foto" src="${foto}" alt="${escHtml(cat.nome)}" loading="lazy" /></div>` : ""}
       <div class="categoria-corpo">
         <div class="categoria-topo">
           <div class="icone-circulo">${iconeCategoria(cat.nome)}</div>
