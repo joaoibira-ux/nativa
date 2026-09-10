@@ -306,10 +306,8 @@ header {
   align-content: start;
   padding-bottom: 10px;
 }
-.opcoes-grid .opcao-item { padding: 8px; font-size: 0.76rem; gap: 7px; }
-.opcoes-grid .opcao-nome { line-height: 1.2; }
-.opcoes-grid .opcao-foto { width: 30px; height: 30px; }
-.opcoes-grid .opcao-marca { width: 16px; height: 16px; }
+.opcoes-grid .opcao-nome { font-size: 0.78rem; line-height: 1.2; }
+.opcoes-grid .opcao-legenda { padding: 6px 6px 8px; }
 
 .link-especiais {
   flex-shrink: 0;
@@ -381,15 +379,6 @@ header {
 }
 .opcao-item.desabilitado { opacity: 0.4; pointer-events: none; }
 
-.opcao-foto {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1.5px solid #d9b877;
-  flex-shrink: 0;
-}
-
 .opcao-marca {
   width: 19px;
   height: 19px;
@@ -403,10 +392,67 @@ header {
   color: #fff;
 }
 .opcao-item.selecionado .opcao-marca { background: linear-gradient(180deg, #d9ae4f, #a3762a); border-color: #a3762a; }
-.opcao-item[data-quadrado="1"] .opcao-marca { border-radius: 5px; }
 
 .opcao-nome { flex: 1; }
 .opcao-preco { font-size: 0.78rem; color: #a3762a; font-weight: 700; }
+
+/* ---- Opção visual (assistente): foto grande, sem checkbox, seleção pela borda + selo ---- */
+.opcao-item.opcao-visual {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+}
+.opcao-item.opcao-visual.selecionado {
+  transform: scale(1.02);
+}
+
+.opcao-foto-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #f0e2bd;
+  border-radius: 9px 9px 0 0;
+  overflow: hidden;
+}
+.opcao-foto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.opcao-foto-vazia {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+}
+.opcao-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #d9ae4f, #a3762a);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  border: 2px solid #fffdf8;
+}
+
+.opcao-legenda {
+  padding: 8px 10px 10px;
+  text-align: center;
+}
+.opcao-visual .opcao-nome { flex: none; display: block; font-weight: 600; }
+.opcao-visual .opcao-preco { display: block; margin-top: 2px; }
 
 .especiais-titulo {
   display: flex;

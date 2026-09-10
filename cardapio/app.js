@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.12";
+const VERSAO_CARDAPIO = "1.13";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -383,14 +383,20 @@ function renderPassoMontagem() {
     const marcado = sel.includes(nome);
     const atingiuMax = grupo.max > 1 && sel.length >= grupo.max && !marcado;
     const precoOpt = grupo.opcoesComPreco ? grupo.opcoesComPreco.find(o => o.nome === nome) : null;
-    const quadrado = grupo.max > 1 ? "1" : "0";
     const foto = fotoOpcao(categoria.id, nome);
+    const precoHtml = precoOpt
+      ? `<span class="opcao-preco">${grupo.defineBasePreco ? fmtMoeda(precoOpt.preco) : "+" + fmtMoeda(precoOpt.preco)}</span>`
+      : (grupo.precoPorItem ? `<span class="opcao-preco">+${fmtMoeda(grupo.precoPorItem)}</span>` : "");
     return `
-      <div class="opcao-item ${marcado ? "selecionado" : ""} ${atingiuMax ? "desabilitado" : ""}" data-quadrado="${quadrado}" onclick="toggleOpcaoPasso('${escHtml(nome).replace(/'/g, "\\'")}')">
-        ${foto ? `<img class="opcao-foto" src="${foto}" alt="" loading="lazy" />` : ""}
-        <span class="opcao-marca">${marcado ? "✓" : ""}</span>
-        <span class="opcao-nome">${escHtml(nome)}</span>
-        ${precoOpt ? `<span class="opcao-preco">${grupo.defineBasePreco ? fmtMoeda(precoOpt.preco) : "+" + fmtMoeda(precoOpt.preco)}</span>` : (grupo.precoPorItem ? `<span class="opcao-preco">+${fmtMoeda(grupo.precoPorItem)}</span>` : "")}
+      <div class="opcao-item opcao-visual ${marcado ? "selecionado" : ""} ${atingiuMax ? "desabilitado" : ""}" onclick="toggleOpcaoPasso('${escHtml(nome).replace(/'/g, "\\'")}')">
+        <div class="opcao-foto-wrap">
+          ${foto ? `<img class="opcao-foto" src="${foto}" alt="" loading="lazy" />` : `<div class="opcao-foto-vazia">🍽️</div>`}
+          ${marcado ? `<span class="opcao-check">✓</span>` : ""}
+        </div>
+        <div class="opcao-legenda">
+          <span class="opcao-nome">${escHtml(nome)}</span>
+          ${precoHtml}
+        </div>
       </div>
     `;
   }).join("");
