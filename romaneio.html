@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Pedidos" />
-  <title>NATIVA - Pedidos</title>
+  <meta name="apple-mobile-web-app-title" content="Romaneio" />
+  <title>NATIVA - Romaneio de Produção</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./style.css?v=15" />
 </head>
@@ -14,29 +14,33 @@
 
 <header>
   <a class="btn-voltar-header" href="./menu.html">← Menu</a>
-  <span class="titulo">Pedidos</span>
+  <span class="titulo">Romaneio de Produção</span>
   <span id="versao-app" class="header-versao"></span>
 </header>
 
 <div id="lista" class="lista"></div>
-<button class="fab" id="fab" onclick="abrirFormulario()">+</button>
 
-<div id="form-overlay" class="form-overlay" style="display:none">
+<div id="barra-selecao" class="romaneio-barra" style="display:none">
+  <span id="romaneio-contador">0 pedidos selecionados</span>
+  <button class="btn-save" onclick="gerarRomaneio()">Gerar romaneio</button>
+</div>
+
+<div id="resultado-overlay" class="form-overlay" style="display:none">
   <div class="form-scroll">
-    <header style="margin: -12px -14px 12px; border-radius: 0;">
-      <a class="btn-voltar-header" href="javascript:void(0)" onclick="fecharFormulario()">← Voltar</a>
-      <span class="titulo">Escolha o cliente</span>
-    </header>
-    <p style="font-size:0.82rem;color:#666;margin-bottom:12px;">
-      Ao escolher o cliente, o cardápio dele abre em outra aba para você montar o pedido clicando nas opções — igual ao que o cliente vê.
-    </p>
-    <div id="lista-clientes-pedido" class="lista" style="padding:0;"></div>
+    <div class="romaneio-resultado-header">
+      <span class="titulo">Romaneio gerado</span>
+      <span id="romaneio-resultado-meta"></span>
+    </div>
+    <div id="romaneio-resultado-lista"></div>
+    <div class="form-actions">
+      <button type="button" class="btn-save" onclick="fecharResultado()">Fechar</button>
+    </div>
   </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./app.js?v=22"></script>
-<script src="./pedidos.js?v=4"></script>
+<script src="./romaneio.js?v=1"></script>
 </body>
 </html>

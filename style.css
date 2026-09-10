@@ -311,6 +311,84 @@ body.menu-body {
   font-size: 0.92rem;
 }
 
+/* ---- Romaneio de Produção ---- */
+.romaneio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.romaneio-checkbox {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 2px solid #ad9774;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  margin-top: 2px;
+}
+.romaneio-card.romaneio-marcado {
+  border-left: 4px solid #1a3322;
+  background: #f0f7ef;
+}
+.romaneio-card.romaneio-marcado .romaneio-checkbox {
+  background: #1a3322;
+  border-color: #1a3322;
+}
+.romaneio-card-corpo { flex: 1; min-width: 0; }
+
+.romaneio-barra {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1a3322;
+  color: #fff;
+  padding: 14px 16px max(14px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 100;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+}
+.romaneio-barra .btn-save { flex-shrink: 0; padding: 10px 18px; }
+
+.romaneio-resultado-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.romaneio-resultado-header .titulo { font-size: 1.1rem; font-weight: 700; color: #1a3322; }
+#romaneio-resultado-meta { font-size: 0.82rem; color: #666; }
+
+.romaneio-total-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.romaneio-total-qtd {
+  flex-shrink: 0;
+  background: #1a3322;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.romaneio-total-nome { font-size: 0.88rem; color: #1a1a2e; }
+
 .form-item-row {
   display: grid;
   grid-template-columns: 1fr 70px 36px;
