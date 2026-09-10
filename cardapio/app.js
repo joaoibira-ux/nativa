@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.09";
+const VERSAO_CARDAPIO = "1.10";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -206,7 +206,7 @@ function renderCardapio() {
 
 function renderFabCarrinho() {
   return `<button class="fab-carrinho" id="fab-carrinho" onclick="abrirCarrinho()" style="display:none">
-    <span><span class="badge" id="fab-badge">0</span>Ver carrinho</span>
+    <span><span class="badge" id="fab-badge">0</span>Ver pedido</span>
     <span id="fab-total">R$ 0,00</span>
   </button>`;
 }
@@ -726,14 +726,15 @@ function calcularResumoCarrinho() {
       .filter(c => c.qtd > info.qtd)
       .sort((a, b) => a.qtd - b.qtd)[0];
     if (proximo) {
-      const precoMedioUnidade = info.qtd > 0 ? info.subtotal / info.qtd : (categoria.precoBase || 0);
-      const economiaEstimada = Math.max(0, precoMedioUnidade * proximo.qtd - proximo.preco);
+      // Desconto exato do combo (preço unitário oficial da categoria × qtd do combo, menos o preço do combo) —
+      // não uma média baseada no carrinho atual, que pode variar se houver "especiais" misturados.
+      const economia = Math.max(0, (categoria.precoBase || 0) * proximo.qtd - proximo.preco);
       promocoesFaltando.push({
         nome: info.nome,
         faltam: proximo.qtd - info.qtd,
         proximoQtd: proximo.qtd,
         precoCombo: proximo.preco,
-        economiaEstimada
+        economia
       });
     }
   });
@@ -782,7 +783,7 @@ function renderCarrinho() {
   const faltandoHtml = resumo.promocoesFaltando.map(p => `
     <div class="promo-aviso">
       🎯 Faltam <strong>${p.faltam}</strong> ${escHtml(p.nome)} para o combo de ${p.proximoQtd} un. por ${fmtMoeda(p.precoCombo)}
-      ${p.economiaEstimada > 0 ? ` (economize ~${fmtMoeda(p.economiaEstimada)})` : ""}!
+      ${p.economia > 0 ? ` (economize ${fmtMoeda(p.economia)})` : ""}!
     </div>
   `).join("");
   const brindeHtml = resumo.brindesIogurte > 0
@@ -962,7 +963,7 @@ function renderSucesso(total, pedidoId, promocoesFaltando) {
   const promoHtml = (promocoesFaltando || []).map(p => `
     <div class="promo-aviso">
       🎯 No próximo pedido, peça mais <strong>${p.faltam}</strong> ${escHtml(p.nome)} e desbloqueie o combo de ${p.proximoQtd} un. por ${fmtMoeda(p.precoCombo)}
-      ${p.economiaEstimada > 0 ? ` (economize ~${fmtMoeda(p.economiaEstimada)})` : ""}!
+      ${p.economia > 0 ? ` (economize ${fmtMoeda(p.economia)})` : ""}!
     </div>
   `).join("");
 
