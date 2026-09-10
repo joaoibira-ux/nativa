@@ -503,6 +503,16 @@ header {
 }
 
 /* ---- Carrinho (overlay) ---- */
+.cliente-info-box {
+  background: #fffdf8;
+  border: 1.5px dashed #d9b877;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.cliente-info-nome { font-family: "Playfair Display", Georgia, serif; font-size: 1rem; font-weight: 800; color: #2e2013; }
+.cliente-info-linha { font-size: 0.8rem; color: #6b5638; margin-top: 3px; }
+
 .carrinho-item {
   background: #fffdf8;
   border: 1px solid #e6d3a8;
@@ -512,17 +522,31 @@ header {
 }
 .carrinho-item-topo { display: flex; justify-content: space-between; gap: 8px; }
 .carrinho-item-nome { font-family: "Playfair Display", Georgia, serif; font-size: 0.92rem; font-weight: 700; color: #2e2013; flex: 1; }
+.carrinho-item-acoes { display: flex; gap: 2px; flex-shrink: 0; }
 .carrinho-item-desc { font-size: 0.76rem; color: #7a6440; margin-top: 4px; line-height: 1.4; }
 .carrinho-item-rodape { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
 .carrinho-item-qtd { font-size: 0.8rem; color: #6b5638; }
 .carrinho-item-valor { font-size: 0.88rem; font-weight: 800; color: #a3762a; }
-.btn-remover-carrinho {
+.btn-remover-carrinho, .btn-editar-carrinho {
   background: none;
   border: none;
   color: #c0392b;
   font-size: 0.95rem;
   cursor: pointer;
   padding: 2px 6px;
+}
+.btn-editar-carrinho { color: #a3762a; }
+
+.btn-cancel-carrinho {
+  flex: 1;
+  padding: 13px;
+  background: none;
+  color: #6b5638;
+  border: 1.5px solid #c9ac6e;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .carrinho-resumo {
@@ -544,6 +568,20 @@ header {
   border-radius: 8px;
   padding: 6px 10px;
   margin-top: 6px;
+}
+
+.promo-aviso {
+  font-size: 0.76rem;
+  color: #8a5a1a;
+  background: #fbe9c8;
+  border: 1px solid #e0b869;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  line-height: 1.4;
+  text-align: left;
+  width: 100%;
+  max-width: 340px;
 }
 
 textarea.obs-input {

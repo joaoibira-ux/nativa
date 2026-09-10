@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.05";
+const VERSAO_CARDAPIO = "1.06";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -20,6 +20,7 @@ const CLIENTE_KEY = "nativa_cardapio_cliente";
 
 let clienteId = null;
 let clienteNome = "";
+let clienteDados = null; // { nome, telefone, endereco }
 let categorias = [];
 let carrinho = [];
 let todosClientes = [];
@@ -112,7 +113,7 @@ async function init() {
     try {
       const clienteSnap = await db.collection("clientes").doc(clienteIdUrl).get();
       if (clienteSnap.exists) {
-        definirClienteIdentificado(clienteIdUrl, clienteSnap.data().nome || "");
+        definirClienteIdentificado(clienteIdUrl, clienteSnap.data());
       }
     } catch (e) {
       // Sem conexão pra validar agora — segue sem identificar, tenta de novo ao montar.
@@ -124,18 +125,19 @@ async function init() {
   if (!clienteId) {
     try {
       const salvo = JSON.parse(sessionStorage.getItem(CLIENTE_KEY) || "null");
-      if (salvo && salvo.id && salvo.nome) definirClienteIdentificado(salvo.id, salvo.nome);
+      if (salvo && salvo.id && salvo.dados) definirClienteIdentificado(salvo.id, salvo.dados);
     } catch (e) {}
   }
 
   renderCardapio();
 }
 
-function definirClienteIdentificado(id, nome) {
+function definirClienteIdentificado(id, dados) {
   clienteId = id;
-  clienteNome = nome;
+  clienteDados = dados || {};
+  clienteNome = clienteDados.nome || "";
   try {
-    sessionStorage.setItem(CLIENTE_KEY, JSON.stringify({ id, nome }));
+    sessionStorage.setItem(CLIENTE_KEY, JSON.stringify({ id, dados: clienteDados }));
   } catch (e) {}
   const headerCliente = document.getElementById("header-cliente");
   if (headerCliente) headerCliente.textContent = "Pedido para\n" + clienteNome;
@@ -271,7 +273,7 @@ function renderPassoMontagem() {
 
   const itensHtml = opcoesArr.map(nome => {
     const marcado = sel.includes(nome);
-    const atingiuMax = sel.length >= grupo.max && !marcado;
+    const atingiuMax = grupo.max > 1 && sel.length >= grupo.max && !marcado;
     const precoOpt = grupo.opcoesComPreco ? grupo.opcoesComPreco.find(o => o.nome === nome) : null;
     const quadrado = grupo.max > 1 ? "1" : "0";
     return `
@@ -376,22 +378,48 @@ function alterarQtdMontagem(delta) {
 }
 
 function finalizarItemMontagem() {
-  const { categoria, selecoes, quantidade } = montagemAtual;
+  const { categoria, selecoes, quantidade, editandoIdItem } = montagemAtual;
 
   const valorUnitario = calcularPrecoItem(categoria, selecoes);
   const descricao = montarDescricaoItem(categoria, selecoes);
 
-  carrinho.push({
-    idItem: "it_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+  const item = {
+    idItem: editandoIdItem || ("it_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
     categoriaId: categoria.id,
     categoriaNome: categoria.nome,
     descricao,
     valorUnitario,
-    quantidade
-  });
+    quantidade,
+    selecoes: selecoes.map(s => s.slice())
+  };
+
+  if (editandoIdItem) {
+    const idx = carrinho.findIndex(i => i.idItem === editandoIdItem);
+    if (idx >= 0) carrinho[idx] = item;
+    else carrinho.push(item);
+  } else {
+    carrinho.push(item);
+  }
+
   salvarCarrinho();
   montagemAtual = null;
   renderCarrinho();
+}
+
+function editarItemCarrinho(idItem) {
+  const item = carrinho.find(i => i.idItem === idItem);
+  if (!item || item.especial) return;
+  const categoria = categorias.find(c => c.id === item.categoriaId);
+  if (!categoria) return;
+
+  montagemAtual = {
+    categoria,
+    selecoes: (item.selecoes || (categoria.grupos || []).map(() => [])).map(s => s.slice()),
+    passo: 0,
+    quantidade: item.quantidade,
+    editandoIdItem: idItem
+  };
+  renderPassoMontagem();
 }
 
 function calcularPrecoItem(categoria, selecoes) {
@@ -445,9 +473,11 @@ function confirmarMontagem() {
 }
 
 function fecharMontagem() {
+  const editando = montagemAtual && montagemAtual.editandoIdItem;
   montagemAtual = null;
   categoriaPendente = null;
-  renderCardapio();
+  if (editando) renderCarrinho();
+  else renderCardapio();
 }
 
 /* ---------------- Identificação / cadastro de cliente ---------------- */
@@ -538,7 +568,7 @@ function cancelarIdentificacao() {
 function selecionarClienteExistente(id) {
   const c = todosClientes.find(x => x.id === id);
   if (!c) return;
-  definirClienteIdentificado(id, c.nome || "");
+  definirClienteIdentificado(id, c);
   retomarAposIdentificacao();
 }
 
@@ -595,8 +625,9 @@ async function salvarNovoClienteCardapio() {
       longitude: null,
       criadoEm: firebase.firestore.FieldValue.serverTimestamp()
     });
-    todosClientes.push({ id: ref.id, nome, telefone, endereco });
-    definirClienteIdentificado(ref.id, nome);
+    const novoCliente = { id: ref.id, nome, telefone, endereco };
+    todosClientes.push(novoCliente);
+    definirClienteIdentificado(ref.id, novoCliente);
     retomarAposIdentificacao();
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Salvar e continuar"; }
@@ -677,17 +708,34 @@ function calcularResumoCarrinho() {
   let subtotalBruto = 0;
   let descontoCombo = 0;
   const avisosCombo = [];
+  const promocoesFaltando = [];
 
   Object.entries(porCategoria).forEach(([catId, info]) => {
     subtotalBruto += info.subtotal;
     const categoria = categorias.find(c => c.id === catId);
-    if (categoria && categoria.combos && categoria.combos.length) {
-      const combo = categoria.combos.find(c => c.qtd === info.qtd);
-      if (combo && combo.preco < info.subtotal) {
-        const desconto = info.subtotal - combo.preco;
-        descontoCombo += desconto;
-        avisosCombo.push(`Combo ${info.qtd}un. de ${info.nome} aplicado: economia de ${fmtMoeda(desconto)}`);
-      }
+    if (!categoria || !categoria.combos || !categoria.combos.length) return;
+
+    const combo = categoria.combos.find(c => c.qtd === info.qtd);
+    if (combo && combo.preco < info.subtotal) {
+      const desconto = info.subtotal - combo.preco;
+      descontoCombo += desconto;
+      avisosCombo.push(`Combo ${info.qtd} un. de ${info.nome} aplicado: você economiza ${fmtMoeda(desconto)}!`);
+      return;
+    }
+
+    const proximo = categoria.combos
+      .filter(c => c.qtd > info.qtd)
+      .sort((a, b) => a.qtd - b.qtd)[0];
+    if (proximo) {
+      const precoMedioUnidade = info.qtd > 0 ? info.subtotal / info.qtd : (categoria.precoBase || 0);
+      const economiaEstimada = Math.max(0, precoMedioUnidade * proximo.qtd - proximo.preco);
+      promocoesFaltando.push({
+        nome: info.nome,
+        faltam: proximo.qtd - info.qtd,
+        proximoQtd: proximo.qtd,
+        precoCombo: proximo.preco,
+        economiaEstimada
+      });
     }
   });
 
@@ -695,7 +743,8 @@ function calcularResumoCarrinho() {
     subtotalBruto,
     descontoCombo,
     total: subtotalBruto - descontoCombo,
-    avisosCombo
+    avisosCombo,
+    promocoesFaltando
   };
 }
 
@@ -707,12 +756,15 @@ function renderCarrinho() {
   const resumo = calcularResumoCarrinho();
 
   const itensHtml = carrinho.length === 0
-    ? `<div class="empty-carrinho">Seu carrinho está vazio.</div>`
+    ? `<div class="empty-carrinho">Seu pedido está vazio.</div>`
     : carrinho.map(item => `
       <div class="carrinho-item">
         <div class="carrinho-item-topo">
           <div class="carrinho-item-nome">${escHtml(item.categoriaNome)}</div>
-          <button class="btn-remover-carrinho" onclick="removerDoCarrinho('${item.idItem}')">🗑️</button>
+          <div class="carrinho-item-acoes">
+            ${!item.especial ? `<button class="btn-editar-carrinho" onclick="editarItemCarrinho('${item.idItem}')">✏️</button>` : ""}
+            <button class="btn-remover-carrinho" onclick="removerDoCarrinho('${item.idItem}')">🗑️</button>
+          </div>
         </div>
         ${item.descricao ? `<div class="carrinho-item-desc">${escHtml(item.descricao)}</div>` : ""}
         <div class="carrinho-item-rodape">
@@ -723,16 +775,30 @@ function renderCarrinho() {
     `).join("");
 
   const avisosHtml = resumo.avisosCombo.map(a => `<div class="combo-aviso">🎉 ${escHtml(a)}</div>`).join("");
+  const faltandoHtml = resumo.promocoesFaltando.map(p => `
+    <div class="promo-aviso">
+      🎯 Faltam <strong>${p.faltam}</strong> ${escHtml(p.nome)} para o combo de ${p.proximoQtd} un. por ${fmtMoeda(p.precoCombo)}
+      ${p.economiaEstimada > 0 ? ` (economize ~${fmtMoeda(p.economiaEstimada)})` : ""}!
+    </div>
+  `).join("");
+
+  const c = clienteDados || {};
 
   appEl.innerHTML = `
     <div class="overlay">
       <div class="overlay-header">
-        <span class="titulo">Seu carrinho</span>
+        <span class="titulo">Pedido</span>
         <button class="btn-fechar" onclick="renderCardapio()">✕</button>
       </div>
       <div class="overlay-scroll">
+        <div class="cliente-info-box">
+          <div class="cliente-info-nome">${escHtml(c.nome || clienteNome)}</div>
+          ${c.telefone ? `<div class="cliente-info-linha">📞 ${escHtml(c.telefone)}</div>` : ""}
+          ${c.endereco ? `<div class="cliente-info-linha">🏠 ${escHtml(c.endereco)}</div>` : ""}
+        </div>
         ${itensHtml}
         ${avisosHtml}
+        ${faltandoHtml}
         ${carrinho.length > 0 ? `
           <textarea class="obs-input" id="obs-pedido" placeholder="Observações (opcional) — ex: ponto de referência, preferências..."></textarea>
           <div class="carrinho-resumo">
@@ -742,11 +808,10 @@ function renderCarrinho() {
           </div>
         ` : ""}
       </div>
-      ${carrinho.length > 0 ? `
-        <div class="overlay-footer">
-          <button class="btn-confirmar-item" onclick="finalizarPedido()">Finalizar pedido</button>
-        </div>
-      ` : ""}
+      <div class="overlay-footer coluna-footer">
+        <button class="btn-cancel-carrinho" onclick="renderCardapio()">+ Adicionar itens</button>
+        ${carrinho.length > 0 ? `<button class="btn-confirmar-item" onclick="finalizarPedido()">Finalizar pedido</button>` : ""}
+      </div>
     </div>
   `;
 }
@@ -799,7 +864,7 @@ async function finalizarPedido() {
 
   carrinho = [];
   sessionStorage.removeItem(CARRINHO_KEY);
-  renderSucesso(resumo.total, pedidoRef.id);
+  renderSucesso(resumo.total, pedidoRef.id, resumo.promocoesFaltando);
 }
 
 /* ---------------- PIX (payload EMV / Copia e Cola + QR Code) ---------------- */
@@ -865,7 +930,7 @@ function gerarPayloadPix({ chave, nome, cidade, valor, txid }) {
   return payload;
 }
 
-function renderSucesso(total, pedidoId) {
+function renderSucesso(total, pedidoId, promocoesFaltando) {
   const txid = (pedidoId || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 25);
   const payloadPix = gerarPayloadPix({
     chave: PIX_CHAVE,
@@ -875,11 +940,19 @@ function renderSucesso(total, pedidoId) {
     txid
   });
 
+  const promoHtml = (promocoesFaltando || []).map(p => `
+    <div class="promo-aviso">
+      🎯 No próximo pedido, peça mais <strong>${p.faltam}</strong> ${escHtml(p.nome)} e desbloqueie o combo de ${p.proximoQtd} un. por ${fmtMoeda(p.precoCombo)}
+      ${p.economiaEstimada > 0 ? ` (economize ~${fmtMoeda(p.economiaEstimada)})` : ""}!
+    </div>
+  `).join("");
+
   appEl.innerHTML = `
     <div class="tela-central">
       <div class="sucesso-icone">✅</div>
       <h2 class="serif">Pedido enviado!</h2>
       <p>Seu pedido foi registrado. Para confirmar e entrar em produção, realize o pagamento via PIX abaixo.</p>
+      ${promoHtml}
       <div class="pix-box">
         <div class="pix-qrcode-wrap" id="pix-qrcode"></div>
         <div class="pix-label" style="text-align:center;margin-top:8px;">Aponte a câmera do app do banco</div>
