@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.04";
+const VERSAO_CARDAPIO = "1.05";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -224,9 +224,9 @@ function atualizarFabCarrinho() {
   document.getElementById("fab-total").textContent = fmtMoeda(resumo.total);
 }
 
-/* ---------------- Montagem de item ---------------- */
+/* ---------------- Montagem de item (assistente passo a passo) ---------------- */
 
-let montagemAtual = null; // { categoria, selecoes: [[]], quantidade }
+let montagemAtual = null; // { categoria, selecoes: [[]], passo, quantidade }
 
 function abrirMontagem(categoriaId) {
   if (!clienteId) {
@@ -241,122 +241,157 @@ function abrirMontagem(categoriaId) {
   montagemAtual = {
     categoria,
     selecoes: (categoria.grupos || []).map(() => []),
+    passo: 0,
     quantidade: 1
   };
 
-  renderMontagem();
+  renderPassoMontagem();
 }
 
-function renderMontagem() {
-  const { categoria } = montagemAtual;
+function renderPassoMontagem() {
+  const { categoria, passo } = montagemAtual;
+  const grupos = categoria.grupos || [];
 
-  const gruposHtml = (categoria.grupos || []).map((grupo, gi) => {
-    const sel = montagemAtual.selecoes[gi];
-    const completo = sel.length >= grupo.min;
-    const rotuloContador = grupo.max === grupo.min
-      ? `${sel.length}/${grupo.max} selecionado${grupo.max > 1 ? "s" : ""}`
-      : `${sel.length}${grupo.max < 99 ? "/" + grupo.max : ""} selecionado${sel.length === 1 ? "" : "s"}${grupo.min > 0 ? " · mín. " + grupo.min : ""}`;
+  if (passo >= grupos.length) {
+    finalizarItemMontagem();
+    return;
+  }
 
-    const opcoesArr = grupo.opcoesComPreco
-      ? grupo.opcoesComPreco.map(o => o.nome)
-      : grupo.opcoes;
+  const grupo = grupos[passo];
+  const sel = montagemAtual.selecoes[passo];
+  const totalPassos = grupos.length;
+  const ultimoPasso = passo === totalPassos - 1;
+  const podeAvancar = sel.length >= grupo.min;
 
-    const itensHtml = opcoesArr.map(nome => {
-      const marcado = sel.includes(nome);
-      const atingiuMax = sel.length >= grupo.max && !marcado;
-      const precoOpt = grupo.opcoesComPreco ? grupo.opcoesComPreco.find(o => o.nome === nome) : null;
-      const quadrado = grupo.max > 1 ? "1" : "0";
-      return `
-        <div class="opcao-item ${marcado ? "selecionado" : ""} ${atingiuMax ? "desabilitado" : ""}" data-quadrado="${quadrado}" onclick="toggleOpcao(${gi}, '${escHtml(nome).replace(/'/g, "\\'")}')">
-          <span class="opcao-marca">${marcado ? "✓" : ""}</span>
-          <span class="opcao-nome">${escHtml(nome)}</span>
-          ${precoOpt ? `<span class="opcao-preco">${grupo.defineBasePreco ? fmtMoeda(precoOpt.preco) : "+" + fmtMoeda(precoOpt.preco)}</span>` : (grupo.precoPorItem ? `<span class="opcao-preco">+${fmtMoeda(grupo.precoPorItem)}</span>` : "")}
-        </div>
-      `;
-    }).join("");
+  const rotuloContador = grupo.max === grupo.min
+    ? `${sel.length}/${grupo.max} selecionado${grupo.max > 1 ? "s" : ""}`
+    : `${sel.length}${grupo.max < 99 ? "/" + grupo.max : ""} selecionado${sel.length === 1 ? "" : "s"}${grupo.min > 0 ? " · mín. " + grupo.min : " · opcional"}`;
 
+  const opcoesArr = grupo.opcoesComPreco ? grupo.opcoesComPreco.map(o => o.nome) : grupo.opcoes;
+
+  const itensHtml = opcoesArr.map(nome => {
+    const marcado = sel.includes(nome);
+    const atingiuMax = sel.length >= grupo.max && !marcado;
+    const precoOpt = grupo.opcoesComPreco ? grupo.opcoesComPreco.find(o => o.nome === nome) : null;
+    const quadrado = grupo.max > 1 ? "1" : "0";
     return `
-      <div class="grupo-bloco">
-        <div class="grupo-cabecalho">
-          <div class="icone-circulo pequeno">${iconeGrupo(grupo.nome)}</div>
-          <span class="grupo-titulo">${escHtml(grupo.nome)}</span>
-          <span class="grupo-contador ${completo ? "completo" : ""}">${rotuloContador}</span>
-        </div>
-        <div class="opcoes-lista">${itensHtml}</div>
+      <div class="opcao-item ${marcado ? "selecionado" : ""} ${atingiuMax ? "desabilitado" : ""}" data-quadrado="${quadrado}" onclick="toggleOpcaoPasso('${escHtml(nome).replace(/'/g, "\\'")}')">
+        <span class="opcao-marca">${marcado ? "✓" : ""}</span>
+        <span class="opcao-nome">${escHtml(nome)}</span>
+        ${precoOpt ? `<span class="opcao-preco">${grupo.defineBasePreco ? fmtMoeda(precoOpt.preco) : "+" + fmtMoeda(precoOpt.preco)}</span>` : (grupo.precoPorItem ? `<span class="opcao-preco">+${fmtMoeda(grupo.precoPorItem)}</span>` : "")}
       </div>
     `;
   }).join("");
 
-  const especiaisHtml = (categoria.especiais && categoria.especiais.length) ? `
-    <div class="especiais-titulo">
-      <div class="icone-circulo pequeno">⭐</div>
-      <span>Opções especiais (prontas)</span>
-    </div>
-    <div class="especiais-grid">
-      ${categoria.especiais.map((esp, ei) => `
-        <div class="especial-card">
-          <div class="icone-circulo">🍽️</div>
-          <div class="especial-nome">${escHtml(esp.nome)}</div>
-          <div class="especial-preco">${fmtMoeda(esp.preco)}</div>
-          <button class="btn-add-especial" onclick="adicionarEspecialDireto('${categoria.id}', ${ei})">Adicionar</button>
-        </div>
-      `).join("")}
-    </div>
+  const especiaisBtn = (passo === 0 && categoria.especiais && categoria.especiais.length) ? `
+    <button class="link-especiais" onclick="abrirEspeciaisWizard()">🍽️ Prefere um prato já pronto? Ver opções especiais</button>
   ` : "";
 
   const precoAtual = calcularPrecoItem(categoria, montagemAtual.selecoes);
-  const podeAdicionar = validarSelecaoCompleta(categoria, montagemAtual.selecoes);
 
   appEl.innerHTML = `
-    <div class="overlay">
+    <div class="overlay overlay-fixo">
       <div class="overlay-header">
+        <button class="btn-fechar" onclick="voltarPassoMontagem()">${passo === 0 ? "✕" : "←"}</button>
         <span class="titulo">${escHtml(categoria.nome)}</span>
-        <button class="btn-fechar" onclick="fecharMontagem()">✕</button>
+        <span class="passo-indicador">${passo + 1}/${totalPassos}</span>
       </div>
-      <div class="overlay-scroll">
-        ${categoria.subtitulo ? `<p style="font-size:0.82rem;color:#7a6440;margin-bottom:16px;">${escHtml(categoria.subtitulo)}</p>` : ""}
-        ${gruposHtml}
-        ${especiaisHtml}
-      </div>
-      <div class="overlay-footer">
-        <div class="qtd-stepper">
-          <button onclick="alterarQtdMontagem(-1)">−</button>
-          <span>${montagemAtual.quantidade}</span>
-          <button onclick="alterarQtdMontagem(1)">+</button>
+      <div class="passo-corpo">
+        <div class="grupo-cabecalho-grande">
+          <div class="icone-circulo">${iconeGrupo(grupo.nome)}</div>
+          <div>
+            <div class="grupo-titulo-grande serif">${escHtml(grupo.nome)}</div>
+            <div class="grupo-contador ${sel.length >= grupo.min ? "completo" : ""}">${rotuloContador}</div>
+          </div>
         </div>
-        <button class="btn-confirmar-item" ${podeAdicionar ? "" : "disabled"} onclick="confirmarMontagem()">
-          Adicionar · ${fmtMoeda(precoAtual * montagemAtual.quantidade)}
+        <div class="opcoes-grid">${itensHtml}</div>
+        ${especiaisBtn}
+      </div>
+      <div class="overlay-footer coluna-footer">
+        ${ultimoPasso ? `
+          <div class="qtd-stepper">
+            <button onclick="alterarQtdMontagem(-1)">−</button>
+            <span>${montagemAtual.quantidade}</span>
+            <button onclick="alterarQtdMontagem(1)">+</button>
+          </div>
+        ` : ""}
+        <button class="btn-confirmar-item" ${podeAvancar ? "" : "disabled"} onclick="avancarPassoMontagem()">
+          ${ultimoPasso ? `Ir para o carrinho · ${fmtMoeda(precoAtual * montagemAtual.quantidade)}` : "Avançar"}
         </button>
       </div>
     </div>
   `;
 }
 
-function toggleOpcao(grupoIndex, nome) {
-  const categoria = montagemAtual.categoria;
-  const grupo = categoria.grupos[grupoIndex];
-  const sel = montagemAtual.selecoes[grupoIndex];
+function toggleOpcaoPasso(nome) {
+  const { categoria, passo } = montagemAtual;
+  const grupo = categoria.grupos[passo];
+  const sel = montagemAtual.selecoes[passo];
   const idx = sel.indexOf(nome);
 
   if (idx >= 0) {
     sel.splice(idx, 1);
-  } else {
-    if (grupo.max === 1) {
-      montagemAtual.selecoes[grupoIndex] = [nome];
-    } else if (sel.length < grupo.max) {
-      sel.push(nome);
-    } else {
-      return;
-    }
+    renderPassoMontagem();
+    return;
   }
-  renderMontagem();
+
+  if (grupo.max === 1) {
+    montagemAtual.selecoes[passo] = [nome];
+    renderPassoMontagem();
+    setTimeout(avancarPassoMontagem, 220);
+    return;
+  }
+
+  if (sel.length < grupo.max) {
+    sel.push(nome);
+    renderPassoMontagem();
+    if (sel.length === grupo.max) setTimeout(avancarPassoMontagem, 220);
+    return;
+  }
+}
+
+function avancarPassoMontagem() {
+  if (!montagemAtual) return;
+  const grupo = montagemAtual.categoria.grupos[montagemAtual.passo];
+  const sel = montagemAtual.selecoes[montagemAtual.passo];
+  if (sel.length < grupo.min) return;
+  montagemAtual.passo++;
+  renderPassoMontagem();
+}
+
+function voltarPassoMontagem() {
+  if (montagemAtual.passo === 0) {
+    fecharMontagem();
+    return;
+  }
+  montagemAtual.passo--;
+  renderPassoMontagem();
 }
 
 function alterarQtdMontagem(delta) {
   const nova = montagemAtual.quantidade + delta;
   if (nova < 1) return;
   montagemAtual.quantidade = nova;
-  renderMontagem();
+  renderPassoMontagem();
+}
+
+function finalizarItemMontagem() {
+  const { categoria, selecoes, quantidade } = montagemAtual;
+
+  const valorUnitario = calcularPrecoItem(categoria, selecoes);
+  const descricao = montarDescricaoItem(categoria, selecoes);
+
+  carrinho.push({
+    idItem: "it_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+    categoriaId: categoria.id,
+    categoriaNome: categoria.nome,
+    descricao,
+    valorUnitario,
+    quantidade
+  });
+  salvarCarrinho();
+  montagemAtual = null;
+  renderCarrinho();
 }
 
 function calcularPrecoItem(categoria, selecoes) {
@@ -579,34 +614,52 @@ function retomarAposIdentificacao() {
   }
 }
 
-function adicionarEspecialDireto(categoriaId, especialIndex) {
+function abrirEspeciaisWizard() {
+  const categoria = montagemAtual.categoria;
+  appEl.innerHTML = `
+    <div class="overlay overlay-fixo">
+      <div class="overlay-header">
+        <button class="btn-fechar" onclick="renderPassoMontagem()">←</button>
+        <span class="titulo">${escHtml(categoria.nome)}</span>
+      </div>
+      <div class="passo-corpo">
+        <div class="especiais-titulo">
+          <div class="icone-circulo pequeno">⭐</div>
+          <span>Opções especiais (prontas)</span>
+        </div>
+        <div class="especiais-grid">
+          ${categoria.especiais.map((esp, ei) => `
+            <div class="especial-card">
+              <div class="icone-circulo">🍽️</div>
+              <div class="especial-nome">${escHtml(esp.nome)}</div>
+              <div class="especial-preco">${fmtMoeda(esp.preco)}</div>
+              <button class="btn-add-especial" onclick="adicionarEspecialWizard('${categoria.id}', ${ei})">Adicionar</button>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function adicionarEspecialWizard(categoriaId, especialIndex) {
   const categoria = categorias.find(c => c.id === categoriaId);
   if (!categoria) return;
   const esp = categoria.especiais[especialIndex];
   if (!esp) return;
 
-  const existente = carrinho.find(i => i.categoriaId === categoriaId && i.descricao === esp.nome && i.especial);
-  if (existente) {
-    existente.quantidade += 1;
-  } else {
-    carrinho.push({
-      idItem: "it_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
-      categoriaId: categoria.id,
-      categoriaNome: categoria.nome,
-      descricao: esp.nome,
-      valorUnitario: esp.preco,
-      quantidade: 1,
-      especial: true
-    });
-  }
+  carrinho.push({
+    idItem: "it_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+    categoriaId: categoria.id,
+    categoriaNome: categoria.nome,
+    descricao: esp.nome,
+    valorUnitario: esp.preco,
+    quantidade: 1,
+    especial: true
+  });
   salvarCarrinho();
-  renderMontagem();
-  atualizarFabCarrinhoSeVisivel();
-}
-
-function atualizarFabCarrinhoSeVisivel() {
-  const fab = document.getElementById("fab-carrinho");
-  if (fab) atualizarFabCarrinho();
+  montagemAtual = null;
+  renderCarrinho();
 }
 
 /* ---------------- Carrinho ---------------- */
@@ -723,8 +776,9 @@ async function finalizarPedido() {
     subtotal: item.valorUnitario * item.quantidade
   }));
 
+  let pedidoRef;
   try {
-    await db.collection("pedidos").add({
+    pedidoRef = await db.collection("pedidos").add({
       clienteId,
       clienteNome,
       status: "Pendente",
@@ -745,41 +799,129 @@ async function finalizarPedido() {
 
   carrinho = [];
   sessionStorage.removeItem(CARRINHO_KEY);
-  renderSucesso(resumo.total);
+  renderSucesso(resumo.total, pedidoRef.id);
 }
 
-function renderSucesso(total) {
+/* ---------------- PIX (payload EMV / Copia e Cola + QR Code) ---------------- */
+
+function emvCampo(id, valor) {
+  const tamanho = String(valor.length).padStart(2, "0");
+  return id + tamanho + valor;
+}
+
+function crc16Pix(payload) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+
+const MAPA_ACENTOS_PIX = {
+  "á": "a", "à": "a", "â": "a", "ã": "a", "ä": "a",
+  "é": "e", "è": "e", "ê": "e", "ë": "e",
+  "í": "i", "ì": "i", "î": "i", "ï": "i",
+  "ó": "o", "ò": "o", "ô": "o", "õ": "o", "ö": "o",
+  "ú": "u", "ù": "u", "û": "u", "ü": "u",
+  "ç": "c", "ñ": "n",
+  "Á": "A", "À": "A", "Â": "A", "Ã": "A", "Ä": "A",
+  "É": "E", "È": "E", "Ê": "E", "Ë": "E",
+  "Í": "I", "Ì": "I", "Î": "I", "Ï": "I",
+  "Ó": "O", "Ò": "O", "Ô": "O", "Õ": "O", "Ö": "O",
+  "Ú": "U", "Ù": "U", "Û": "U", "Ü": "U",
+  "Ç": "C", "Ñ": "N"
+};
+
+function normalizarTextoPix(s) {
+  const semAcento = String(s || "").split("").map(ch => MAPA_ACENTOS_PIX[ch] || ch).join("");
+  return semAcento.replace(/[^a-zA-Z0-9 ]/g, "").trim();
+}
+
+function gerarPayloadPix({ chave, nome, cidade, valor, txid }) {
+  const chaveDigits = String(chave).replace(/\D/g, "");
+  const nomeLimpo = normalizarTextoPix(nome).slice(0, 25) || "NATIVA COZINHA LEVE";
+  const cidadeLimpo = normalizarTextoPix(cidade).slice(0, 15) || "RECIFE";
+  const txidLimpo = String(txid || "***").replace(/[^a-zA-Z0-9]/g, "").slice(0, 25) || "***";
+
+  const merchantAccountInfo = emvCampo("00", "BR.GOV.BCB.PIX") + emvCampo("01", chaveDigits);
+  const additionalData = emvCampo("05", txidLimpo);
+
+  let payload =
+    emvCampo("00", "01") +
+    emvCampo("26", merchantAccountInfo) +
+    emvCampo("52", "0000") +
+    emvCampo("53", "986") +
+    (valor > 0 ? emvCampo("54", Number(valor).toFixed(2)) : "") +
+    emvCampo("58", "BR") +
+    emvCampo("59", nomeLimpo) +
+    emvCampo("60", cidadeLimpo) +
+    emvCampo("62", additionalData);
+
+  payload += "6304";
+  payload += crc16Pix(payload);
+  return payload;
+}
+
+function renderSucesso(total, pedidoId) {
+  const txid = (pedidoId || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 25);
+  const payloadPix = gerarPayloadPix({
+    chave: PIX_CHAVE,
+    nome: PIX_FAVORECIDO,
+    cidade: "RECIFE",
+    valor: total,
+    txid
+  });
+
   appEl.innerHTML = `
     <div class="tela-central">
       <div class="sucesso-icone">✅</div>
       <h2 class="serif">Pedido enviado!</h2>
       <p>Seu pedido foi registrado. Para confirmar e entrar em produção, realize o pagamento via PIX abaixo.</p>
       <div class="pix-box">
+        <div class="pix-qrcode-wrap" id="pix-qrcode"></div>
+        <div class="pix-label" style="text-align:center;margin-top:8px;">Aponte a câmera do app do banco</div>
+        <div class="pix-label" style="margin-top:14px;">Pedido de</div>
+        <div class="pix-chave" style="font-size:0.95rem;">${escHtml(clienteNome)}</div>
         <div class="pix-label">Chave PIX (CPF)</div>
         <div class="pix-chave" id="pix-chave-valor">${escHtml(PIX_CHAVE)}</div>
         <div class="pix-favorecido">Favorecido: ${escHtml(PIX_FAVORECIDO)}</div>
         <div class="pix-label">Valor a pagar</div>
         <div class="pix-valor">${fmtMoeda(total)}</div>
-        <button class="btn-copiar-pix" onclick="copiarChavePix()">Copiar chave PIX</button>
+        <button class="btn-copiar-pix" onclick="copiarChavePix()">Copiar código Pix Copia e Cola</button>
       </div>
       <p style="margin-top:14px;font-size:0.76rem;">Após o pagamento, seu pedido é confirmado e entra em produção. Prazo de entrega: até 5 dias úteis.</p>
       <button class="btn-voltar-cardapio" onclick="renderCardapio()">Voltar ao cardápio</button>
     </div>
   `;
+
+  window.pixPayloadAtual = payloadPix;
+  const wrapQr = document.getElementById("pix-qrcode");
+  if (wrapQr && window.qrcode) {
+    try {
+      const qr = qrcode(0, "M");
+      qr.addData(payloadPix);
+      qr.make();
+      wrapQr.innerHTML = qr.createImgTag(5, 8);
+    } catch (e) {
+      wrapQr.innerHTML = '<p style="font-size:0.78rem;color:#a3823f;">Não foi possível gerar o QR Code — use o código copia e cola abaixo.</p>';
+    }
+  }
 }
 
 async function copiarChavePix() {
-  const chave = PIX_CHAVE.replace(/\D/g, "");
+  const texto = window.pixPayloadAtual || PIX_CHAVE.replace(/\D/g, "");
   try {
-    await navigator.clipboard.writeText(chave);
+    await navigator.clipboard.writeText(texto);
   } catch (e) {
-    const el = document.getElementById("pix-chave-valor");
-    const range = document.createRange();
-    range.selectNode(el);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
+    const input = document.createElement("textarea");
+    input.value = texto;
+    document.body.appendChild(input);
+    input.select();
     document.execCommand("copy");
-    window.getSelection().removeAllRanges();
+    document.body.removeChild(input);
   }
   const btn = document.querySelector(".btn-copiar-pix");
   if (btn) {
