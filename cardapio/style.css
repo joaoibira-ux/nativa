@@ -4,8 +4,7 @@ html, body { height: 100%; height: 100dvh; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background:
-    radial-gradient(ellipse at top, #faf1dc 0%, #f0dfb8 55%, #e6cf9d 100%);
+  background: linear-gradient(180deg, #2e2013, #1c1409);
   color: #3a2a16;
   display: flex;
   flex-direction: column;
@@ -76,8 +75,8 @@ header {
 }
 
 .tela-central .icone { font-size: 2.4rem; }
-.tela-central h2 { font-size: 1.1rem; color: #2e2013; }
-.tela-central p { font-size: 0.88rem; color: #6b5638; max-width: 320px; line-height: 1.5; }
+.tela-central h2 { font-size: 1.1rem; color: #e8c473; }
+.tela-central p { font-size: 0.88rem; color: #cbb083; max-width: 320px; line-height: 1.5; }
 
 /* ---- Conteúdo ---- */
 .conteudo {
@@ -106,8 +105,8 @@ header {
   -webkit-text-fill-color: transparent;
   text-shadow: 0 1px 0 rgba(255,255,255,0.25);
 }
-.intro .marca-sub { font-size: 0.72rem; color: #6b5638; letter-spacing: 1.5px; font-weight: 600; margin-top: 4px; }
-.intro .frase { font-size: 0.82rem; color: #6b5638; margin-top: 10px; font-style: italic; }
+.intro .marca-sub { font-size: 0.72rem; color: #cbb083; letter-spacing: 1.5px; font-weight: 600; margin-top: 4px; }
+.intro .frase { font-size: 0.82rem; color: #b89a63; margin-top: 10px; font-style: italic; }
 
 /* ---- Ícone circular dourado ---- */
 .icone-circulo {
@@ -667,8 +666,8 @@ textarea.obs-input {
   margin-top: 20px;
   padding: 12px 24px;
   background: none;
-  color: #6b5638;
-  border: 1.5px solid #c9ac6e;
+  color: #e8c473;
+  border: 1.5px solid #6b5020;
   border-radius: 10px;
   font-size: 0.85rem;
   font-weight: 700;
@@ -678,6 +677,6 @@ textarea.obs-input {
 .footer-versao {
   text-align: center;
   font-size: 0.65rem;
-  color: #8a6d28;
+  color: #8a7350;
   padding: 10px 0 6px;
 }

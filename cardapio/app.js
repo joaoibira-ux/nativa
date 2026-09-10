@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.08";
+const VERSAO_CARDAPIO = "1.09";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -738,12 +738,17 @@ function calcularResumoCarrinho() {
     }
   });
 
+  const brindesIogurte = carrinho
+    .filter(item => item.especial)
+    .reduce((soma, item) => soma + item.quantidade, 0);
+
   return {
     subtotalBruto,
     descontoCombo,
     total: subtotalBruto - descontoCombo,
     avisosCombo,
-    promocoesFaltando
+    promocoesFaltando,
+    brindesIogurte
   };
 }
 
@@ -780,6 +785,9 @@ function renderCarrinho() {
       ${p.economiaEstimada > 0 ? ` (economize ~${fmtMoeda(p.economiaEstimada)})` : ""}!
     </div>
   `).join("");
+  const brindeHtml = resumo.brindesIogurte > 0
+    ? `<div class="combo-aviso">🎁 Você ganhou ${resumo.brindesIogurte} Iogurte${resumo.brindesIogurte > 1 ? "s" : ""} Natural Artesanal grátis pelos pratos prontos!</div>`
+    : "";
 
   const c = clienteDados || {};
 
@@ -797,6 +805,7 @@ function renderCarrinho() {
         </div>
         ${itensHtml}
         ${avisosHtml}
+        ${brindeHtml}
         ${faltandoHtml}
         ${carrinho.length > 0 ? `
           <textarea class="obs-input" id="obs-pedido" placeholder="Observações (opcional) — ex: ponto de referência, preferências..."></textarea>
@@ -839,6 +848,17 @@ async function finalizarPedido() {
     quantidade: item.quantidade,
     subtotal: item.valorUnitario * item.quantidade
   }));
+
+  if (resumo.brindesIogurte > 0) {
+    itens.push({
+      produtoId: null,
+      produtoNome: "Iogurte Natural Artesanal (brinde — pratos prontos)",
+      ud: "Ud",
+      valorUnitario: 0,
+      quantidade: resumo.brindesIogurte,
+      subtotal: 0
+    });
+  }
 
   let pedidoRef;
   try {
