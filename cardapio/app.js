@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.10";
+const VERSAO_CARDAPIO = "1.11";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -17,6 +17,7 @@ const db = firebase.firestore();
 
 const CARRINHO_KEY = "nativa_cardapio_carrinho";
 const CLIENTE_KEY = "nativa_cardapio_cliente";
+const BOAS_VINDAS_KEY = "nativa_cardapio_boas_vindas_vistas";
 
 let clienteId = null;
 let clienteNome = "";
@@ -25,6 +26,7 @@ let categorias = [];
 let carrinho = [];
 let todosClientes = [];
 let categoriaPendente = null;
+let clienteElegivelPresente = false;
 
 const appEl = document.getElementById("app");
 
@@ -129,7 +131,11 @@ async function init() {
     } catch (e) {}
   }
 
-  renderCardapio();
+  if (clienteId) {
+    await prosseguirAposIdentificacao(renderCardapio);
+  } else {
+    renderCardapio();
+  }
 }
 
 function definirClienteIdentificado(id, dados) {
@@ -141,6 +147,52 @@ function definirClienteIdentificado(id, dados) {
   } catch (e) {}
   const headerCliente = document.getElementById("header-cliente");
   if (headerCliente) headerCliente.textContent = "Pedido para\n" + clienteNome;
+}
+
+// Decide se mostra a tela de boas-vindas (1ª vez que esse cliente aparece,
+// sem nenhum pedido anterior) antes de seguir para o destino normal.
+async function prosseguirAposIdentificacao(destino) {
+  let jaViu = false;
+  try { jaViu = sessionStorage.getItem(BOAS_VINDAS_KEY) === "1"; } catch (e) {}
+
+  if (jaViu) {
+    destino();
+    return;
+  }
+
+  try {
+    const snap = await db.collection("pedidos").where("clienteId", "==", clienteId).limit(1).get();
+    clienteElegivelPresente = snap.empty;
+  } catch (e) {
+    clienteElegivelPresente = false;
+  }
+
+  try { sessionStorage.setItem(BOAS_VINDAS_KEY, "1"); } catch (e) {}
+
+  if (clienteElegivelPresente) {
+    renderBoasVindas(destino);
+  } else {
+    destino();
+  }
+}
+
+function renderBoasVindas(destino) {
+  appEl.innerHTML = `
+    <div class="tela-central">
+      <div class="icone">🌱</div>
+      <h2 class="serif">Seja muito bem-vindo(a)${clienteNome ? ", " + escHtml(clienteNome.split(" ")[0]) : ""}!</h2>
+      <p>É um prazer ter você com a gente na Nativa. Para celebrar esse começo, <strong>sua primeira escolha no cardápio é por nossa conta</strong> — um presente de boas-vindas, sem custo nenhum. E a entrega até você também é por nossa conta.</p>
+      <p style="margin-top:10px;">Escolha à vontade — o que você montar primeiro já é seu presente. 🎁</p>
+      <button class="btn-voltar-cardapio" onclick="fecharBoasVindas()">Ver o cardápio</button>
+    </div>
+  `;
+  window.__destinoAposBoasVindas = destino;
+}
+
+function fecharBoasVindas() {
+  const destino = window.__destinoAposBoasVindas || renderCardapio;
+  window.__destinoAposBoasVindas = null;
+  destino();
 }
 
 function renderLoading() {
@@ -564,11 +616,11 @@ function cancelarIdentificacao() {
   renderCardapio();
 }
 
-function selecionarClienteExistente(id) {
+async function selecionarClienteExistente(id) {
   const c = todosClientes.find(x => x.id === id);
   if (!c) return;
   definirClienteIdentificado(id, c);
-  retomarAposIdentificacao();
+  await prosseguirAposIdentificacao(retomarAposIdentificacao);
 }
 
 function abrirCadastroNovoCliente() {
@@ -627,7 +679,7 @@ async function salvarNovoClienteCardapio() {
     const novoCliente = { id: ref.id, nome, telefone, endereco };
     todosClientes.push(novoCliente);
     definirClienteIdentificado(ref.id, novoCliente);
-    retomarAposIdentificacao();
+    await prosseguirAposIdentificacao(retomarAposIdentificacao);
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Salvar e continuar"; }
     alert("Não foi possível salvar seu cadastro. Verifique sua internet e tente novamente.");
@@ -743,10 +795,22 @@ function calcularResumoCarrinho() {
     .filter(item => item.especial)
     .reduce((soma, item) => soma + item.quantidade, 0);
 
+  // Presente de boas-vindas: 1 unidade do primeiro item escolhido pelo
+  // cliente sem pedido anterior nenhum — não o pedido inteiro.
+  let descontoPresente = 0;
+  let itemPresenteId = null;
+  if (clienteElegivelPresente && carrinho.length > 0) {
+    const primeiroItem = carrinho[0];
+    descontoPresente = primeiroItem.valorUnitario;
+    itemPresenteId = primeiroItem.idItem;
+  }
+
   return {
     subtotalBruto,
     descontoCombo,
-    total: subtotalBruto - descontoCombo,
+    descontoPresente,
+    itemPresenteId,
+    total: Math.max(0, subtotalBruto - descontoCombo - descontoPresente),
     avisosCombo,
     promocoesFaltando,
     brindesIogurte
@@ -762,10 +826,14 @@ function renderCarrinho() {
 
   const itensHtml = carrinho.length === 0
     ? `<div class="empty-carrinho">Seu pedido está vazio.</div>`
-    : carrinho.map(item => `
+    : carrinho.map(item => {
+      const ehPresente = item.idItem === resumo.itemPresenteId;
+      const valorItem = item.valorUnitario * item.quantidade;
+      const valorComPresente = ehPresente ? valorItem - resumo.descontoPresente : valorItem;
+      return `
       <div class="carrinho-item">
         <div class="carrinho-item-topo">
-          <div class="carrinho-item-nome">${escHtml(item.categoriaNome)}</div>
+          <div class="carrinho-item-nome">${escHtml(item.categoriaNome)}${ehPresente ? ` <span class="selo-presente">🎁 presente</span>` : ""}</div>
           <div class="carrinho-item-acoes">
             ${!item.especial ? `<button class="btn-editar-carrinho" onclick="editarItemCarrinho('${item.idItem}')">✏️</button>` : ""}
             <button class="btn-remover-carrinho" onclick="removerDoCarrinho('${item.idItem}')">🗑️</button>
@@ -774,10 +842,11 @@ function renderCarrinho() {
         ${item.descricao ? `<div class="carrinho-item-desc">${escHtml(item.descricao)}</div>` : ""}
         <div class="carrinho-item-rodape">
           <span class="carrinho-item-qtd">Qtd: ${item.quantidade} × ${fmtMoeda(item.valorUnitario)}</span>
-          <span class="carrinho-item-valor">${fmtMoeda(item.valorUnitario * item.quantidade)}</span>
+          <span class="carrinho-item-valor">${ehPresente ? `<s style="opacity:0.5;font-weight:500;">${fmtMoeda(valorItem)}</s> ` : ""}${fmtMoeda(valorComPresente)}</span>
         </div>
       </div>
-    `).join("");
+    `;
+    }).join("");
 
   const avisosHtml = resumo.avisosCombo.map(a => `<div class="combo-aviso">🎉 ${escHtml(a)}</div>`).join("");
   const faltandoHtml = resumo.promocoesFaltando.map(p => `
@@ -788,6 +857,9 @@ function renderCarrinho() {
   `).join("");
   const brindeHtml = resumo.brindesIogurte > 0
     ? `<div class="combo-aviso">🎁 Você ganhou ${resumo.brindesIogurte} Iogurte${resumo.brindesIogurte > 1 ? "s" : ""} Natural Artesanal grátis pelos pratos prontos!</div>`
+    : "";
+  const presenteHtml = resumo.descontoPresente > 0
+    ? `<div class="combo-aviso">🎁 Sua primeira escolha é nosso presente de boas-vindas — ${fmtMoeda(resumo.descontoPresente)} por nossa conta!</div>`
     : "";
 
   const c = clienteDados || {};
@@ -807,12 +879,14 @@ function renderCarrinho() {
         ${itensHtml}
         ${avisosHtml}
         ${brindeHtml}
+        ${presenteHtml}
         ${faltandoHtml}
         ${carrinho.length > 0 ? `
           <textarea class="obs-input" id="obs-pedido" placeholder="Observações (opcional) — ex: ponto de referência, preferências..."></textarea>
           <div class="carrinho-resumo">
             <div class="carrinho-resumo-linha"><span>Subtotal</span><span>${fmtMoeda(resumo.subtotalBruto)}</span></div>
             ${resumo.descontoCombo > 0 ? `<div class="carrinho-resumo-linha desconto"><span>Desconto combo</span><span>-${fmtMoeda(resumo.descontoCombo)}</span></div>` : ""}
+            ${resumo.descontoPresente > 0 ? `<div class="carrinho-resumo-linha desconto"><span>Presente de boas-vindas</span><span>-${fmtMoeda(resumo.descontoPresente)}</span></div>` : ""}
             <div class="carrinho-resumo-linha total"><span>Total</span><span>${fmtMoeda(resumo.total)}</span></div>
           </div>
         ` : ""}
@@ -873,6 +947,7 @@ async function finalizarPedido() {
       itens,
       subtotalBruto: resumo.subtotalBruto,
       descontoCombo: resumo.descontoCombo,
+      descontoPresente: resumo.descontoPresente,
       total: resumo.total,
       criadoEm: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -884,6 +959,7 @@ async function finalizarPedido() {
 
   carrinho = [];
   sessionStorage.removeItem(CARRINHO_KEY);
+  clienteElegivelPresente = false;
   renderSucesso(resumo.total, pedidoRef.id, resumo.promocoesFaltando);
 }
 
@@ -951,6 +1027,26 @@ function gerarPayloadPix({ chave, nome, cidade, valor, txid }) {
 }
 
 function renderSucesso(total, pedidoId, promocoesFaltando) {
+  const promoHtml = (promocoesFaltando || []).map(p => `
+    <div class="promo-aviso">
+      🎯 No próximo pedido, peça mais <strong>${p.faltam}</strong> ${escHtml(p.nome)} e desbloqueie o combo de ${p.proximoQtd} un. por ${fmtMoeda(p.precoCombo)}
+      ${p.economia > 0 ? ` (economize ${fmtMoeda(p.economia)})` : ""}!
+    </div>
+  `).join("");
+
+  if (total <= 0) {
+    appEl.innerHTML = `
+      <div class="tela-central">
+        <div class="sucesso-icone">🎁</div>
+        <h2 class="serif">Pedido confirmado!</h2>
+        <p>Esse é o nosso presente de boas-vindas para você — sem nenhum custo. Já entramos em produção e a entrega também é por nossa conta. Obrigado por escolher a Nativa!</p>
+        ${promoHtml}
+        <button class="btn-voltar-cardapio" onclick="renderCardapio()">Voltar ao cardápio</button>
+      </div>
+    `;
+    return;
+  }
+
   const txid = (pedidoId || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 25);
   const payloadPix = gerarPayloadPix({
     chave: PIX_CHAVE,
@@ -959,13 +1055,6 @@ function renderSucesso(total, pedidoId, promocoesFaltando) {
     valor: total,
     txid
   });
-
-  const promoHtml = (promocoesFaltando || []).map(p => `
-    <div class="promo-aviso">
-      🎯 No próximo pedido, peça mais <strong>${p.faltam}</strong> ${escHtml(p.nome)} e desbloqueie o combo de ${p.proximoQtd} un. por ${fmtMoeda(p.precoCombo)}
-      ${p.economia > 0 ? ` (economize ${fmtMoeda(p.economia)})` : ""}!
-    </div>
-  `).join("");
 
   appEl.innerHTML = `
     <div class="tela-central">

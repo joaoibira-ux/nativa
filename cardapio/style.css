@@ -539,6 +539,18 @@ header {
 }
 .carrinho-item-topo { display: flex; justify-content: space-between; gap: 8px; }
 .carrinho-item-nome { font-family: "Playfair Display", Georgia, serif; font-size: 0.92rem; font-weight: 700; color: #2e2013; flex: 1; }
+.selo-presente {
+  display: inline-block;
+  font-family: -apple-system, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, #c9a13f, #9c7324);
+  padding: 2px 8px;
+  border-radius: 20px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
 .carrinho-item-acoes { display: flex; gap: 2px; flex-shrink: 0; }
 .carrinho-item-desc { font-size: 0.76rem; color: #7a6440; margin-top: 4px; line-height: 1.4; }
 .carrinho-item-rodape { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
