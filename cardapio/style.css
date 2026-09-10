@@ -134,6 +134,31 @@ header {
   margin-bottom: 16px;
   box-shadow: 0 3px 10px rgba(60,40,10,0.10);
   position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .12s, box-shadow .12s;
+}
+.categoria-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 4px rgba(60,40,10,0.10);
+}
+.categoria-card::after {
+  content: "›";
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #2e2013;
+  color: #e8c473;
+  font-size: 1.3rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
 .categoria-foto {
@@ -146,6 +171,7 @@ header {
 
 .categoria-corpo {
   padding: 16px;
+  padding-right: 56px;
 }
 
 .categoria-topo {
@@ -188,21 +214,6 @@ header {
   color: #a3762a;
 }
 .categoria-preco span { font-family: -apple-system, sans-serif; font-size: 0.7rem; color: #8a7350; font-weight: 500; }
-
-.btn-montar {
-  margin-top: 12px;
-  width: 100%;
-  padding: 12px;
-  background: linear-gradient(180deg, #2e2013, #1c1409);
-  color: #e8c473;
-  border: 1px solid #6b5020;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-}
-.btn-montar:active { background: #453422; }
 
 /* ---- Overlay de montagem ---- */
 .overlay {

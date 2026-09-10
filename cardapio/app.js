@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.06";
+const VERSAO_CARDAPIO = "1.07";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -183,7 +183,7 @@ function renderCardapio() {
   lista.innerHTML = categorias.map(cat => {
     const foto = fotoCategoria(cat.nome);
     return `
-    <div class="categoria-card">
+    <div class="categoria-card" onclick="abrirMontagem('${cat.id}')">
       ${foto ? `<img class="categoria-foto" src="${foto}" alt="${escHtml(cat.nome)}" loading="lazy" />` : ""}
       <div class="categoria-corpo">
         <div class="categoria-topo">
@@ -196,7 +196,6 @@ function renderCardapio() {
           ${cat.validade ? `<span>❄️ ${escHtml(cat.validade)}</span>` : ""}
         </div>
         ${cat.precoBase != null ? `<div class="categoria-preco serif">${fmtMoeda(cat.precoBase)} <span>a partir de</span></div>` : ""}
-        <button class="btn-montar" onclick="abrirMontagem('${cat.id}')">Montar pedido</button>
       </div>
     </div>
   `;
