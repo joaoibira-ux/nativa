@@ -205,6 +205,11 @@ header .titulo { flex: 1; }
     font-size: 1.6rem;
     letter-spacing: 5px;
   }
+
+  .app-card {
+    min-height: 190px;
+    justify-content: center;
+  }
 }
 
 /* ---- Menu inicial ---- */
