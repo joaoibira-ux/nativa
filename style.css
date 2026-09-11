@@ -368,6 +368,16 @@ body.menu-body {
 .romaneio-resultado-header .titulo { font-size: 1.1rem; font-weight: 700; color: #1a3322; }
 #romaneio-resultado-meta { font-size: 0.82rem; color: #666; }
 
+.romaneio-secao-titulo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ad9774;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 18px 0 8px;
+}
+.romaneio-secao-titulo:first-child { margin-top: 0; }
+
 .romaneio-total-linha {
   display: flex;
   align-items: center;

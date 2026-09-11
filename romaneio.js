@@ -64,8 +64,22 @@ function atualizarBarraSelecao() {
   contador.textContent = `${selecionados.size} pedido${selecionados.size > 1 ? "s" : ""} selecionado${selecionados.size > 1 ? "s" : ""}`;
 }
 
+// "Marmitas Fit Congeladas — Carne de patinho grelhada + Arroz integral, Feijão macassar, Purê de batata doce"
+// vira ["Carne de patinho grelhada", "Arroz integral", "Feijão macassar", "Purê de batata doce"].
+// Itens sem essa estrutura (ex: brinde) ou sem composição (ex: "Wraps Congelados — Frango") caem no fallback:
+// usa o nome inteiro (depois do "—", se houver) como componente único.
+function extrairComponentes(produtoNome) {
+  if (produtoNome.includes("(brinde")) return [produtoNome];
+  const idx = produtoNome.indexOf(" — ");
+  if (idx === -1) return [produtoNome];
+  const resto = produtoNome.slice(idx + 3);
+  const partes = resto.split(" + ").flatMap(parte => parte.split(",").map(s => s.trim())).filter(Boolean);
+  return partes.length ? partes : [produtoNome];
+}
+
 function gerarRomaneio() {
   const totais = {};
+  const componentes = {};
   let totalGeralUnidades = 0;
 
   selecionados.forEach(id => {
@@ -76,24 +90,37 @@ function gerarRomaneio() {
       if (!totais[chave]) totais[chave] = { nome: chave, quantidade: 0 };
       totais[chave].quantidade += item.quantidade;
       totalGeralUnidades += item.quantidade;
+
+      extrairComponentes(item.produtoNome).forEach(comp => {
+        if (!componentes[comp]) componentes[comp] = { nome: comp, quantidade: 0 };
+        componentes[comp].quantidade += item.quantidade;
+      });
     });
   });
 
   const linhas = Object.values(totais).sort((a, b) => b.quantidade - a.quantidade);
+  const linhasComponentes = Object.values(componentes).sort((a, b) => b.quantidade - a.quantidade);
 
   document.getElementById("romaneio-resultado-meta").textContent =
     `${selecionados.size} pedido${selecionados.size > 1 ? "s" : ""} · ${totalGeralUnidades} itens no total`;
+
+  const renderLinhas = arr => arr.map(l => `
+    <div class="romaneio-total-linha">
+      <span class="romaneio-total-qtd">${l.quantidade}×</span>
+      <span class="romaneio-total-nome">${escHtml(l.nome)}</span>
+    </div>
+  `).join("");
 
   const listaEl = document.getElementById("romaneio-resultado-lista");
   if (linhas.length === 0) {
     listaEl.innerHTML = '<div class="empty">Nenhum item encontrado.</div>';
   } else {
-    listaEl.innerHTML = linhas.map(l => `
-      <div class="romaneio-total-linha">
-        <span class="romaneio-total-qtd">${l.quantidade}×</span>
-        <span class="romaneio-total-nome">${escHtml(l.nome)}</span>
-      </div>
-    `).join("");
+    listaEl.innerHTML = `
+      <div class="romaneio-secao-titulo">Pratos completos</div>
+      ${renderLinhas(linhas)}
+      <div class="romaneio-secao-titulo">Componentes (ingredientes)</div>
+      ${renderLinhas(linhasComponentes)}
+    `;
   }
 
   document.getElementById("resultado-overlay").style.display = "flex";
