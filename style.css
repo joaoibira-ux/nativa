@@ -188,6 +188,25 @@ header .titulo { flex: 1; }
   .splash-logo-wrap, .splash { animation: none; }
 }
 
+@media (min-width: 700px) {
+  .splash-logo {
+    width: 440px;
+    height: 440px;
+    max-width: 60vw;
+    max-height: 60vw;
+  }
+
+  .splash-titulo {
+    font-size: 5.2rem;
+    letter-spacing: 10px;
+  }
+
+  .splash-subtitulo {
+    font-size: 1.6rem;
+    letter-spacing: 5px;
+  }
+}
+
 /* ---- Menu inicial ---- */
 body.menu-body {
   background: #ad9774;
