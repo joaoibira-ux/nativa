@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.13";
+const VERSAO_CARDAPIO = "1.14";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -393,10 +393,8 @@ function renderPassoMontagem() {
           ${foto ? `<img class="opcao-foto" src="${foto}" alt="" loading="lazy" />` : `<div class="opcao-foto-vazia">🍽️</div>`}
           ${marcado ? `<span class="opcao-check">✓</span>` : ""}
         </div>
-        <div class="opcao-legenda">
-          <span class="opcao-nome">${escHtml(nome)}</span>
-          ${precoHtml}
-        </div>
+        <span class="opcao-nome">${escHtml(nome)}</span>
+        ${precoHtml}
       </div>
     `;
   }).join("");
