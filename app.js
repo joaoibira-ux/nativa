@@ -1,4 +1,4 @@
-const VERSAO_NATIVA = "2.10";
+const VERSAO_NATIVA = "2.11";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBlZJnj8zFz3vuIpvRIjPA62gAda21EmCc",

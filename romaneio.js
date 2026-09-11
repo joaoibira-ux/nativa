@@ -77,9 +77,17 @@ function extrairComponentes(produtoNome) {
   return partes.length ? partes : [produtoNome];
 }
 
+let romaneioAtual = null; // { totais, componentes, totalGeralUnidades }
+let mapaPratoComponentes = {}; // nome do prato -> Set de nomes de componentes que o compõem
+let componentesProduzidos = new Set();
+let pratosProduzidos = new Set();
+
 function gerarRomaneio() {
   const totais = {};
   const componentes = {};
+  mapaPratoComponentes = {};
+  componentesProduzidos = new Set();
+  pratosProduzidos = new Set();
   let totalGeralUnidades = 0;
 
   selecionados.forEach(id => {
@@ -91,25 +99,38 @@ function gerarRomaneio() {
       totais[chave].quantidade += item.quantidade;
       totalGeralUnidades += item.quantidade;
 
+      if (!mapaPratoComponentes[chave]) mapaPratoComponentes[chave] = new Set();
       extrairComponentes(item.produtoNome).forEach(comp => {
+        mapaPratoComponentes[chave].add(comp);
         if (!componentes[comp]) componentes[comp] = { nome: comp, quantidade: 0 };
         componentes[comp].quantidade += item.quantidade;
       });
     });
   });
 
+  romaneioAtual = { totais, componentes, totalGeralUnidades };
+  renderResultadoRomaneio();
+  document.getElementById("resultado-overlay").style.display = "flex";
+}
+
+function attrEsc(s) {
+  return escHtml(s).replace(/'/g, "&#39;");
+}
+
+function renderResultadoRomaneio() {
+  const { totais, componentes, totalGeralUnidades } = romaneioAtual;
   const linhas = Object.values(totais).sort((a, b) => b.quantidade - a.quantidade);
   const linhasComponentes = Object.values(componentes).sort((a, b) => b.quantidade - a.quantidade);
 
   document.getElementById("romaneio-resultado-meta").textContent =
     `${selecionados.size} pedido${selecionados.size > 1 ? "s" : ""} · ${totalGeralUnidades} itens no total`;
 
-  const renderLinhas = arr => arr.map(l => `
-    <div class="romaneio-total-linha">
+  const renderLinha = (l, produzido, onclick) => `
+    <div class="romaneio-total-linha ${produzido ? "produzido" : ""}" onclick="${onclick}('${attrEsc(l.nome)}')">
       <span class="romaneio-total-qtd">${l.quantidade}×</span>
       <span class="romaneio-total-nome">${escHtml(l.nome)}</span>
     </div>
-  `).join("");
+  `;
 
   const listaEl = document.getElementById("romaneio-resultado-lista");
   if (linhas.length === 0) {
@@ -117,13 +138,31 @@ function gerarRomaneio() {
   } else {
     listaEl.innerHTML = `
       <div class="romaneio-secao-titulo">Pratos completos</div>
-      ${renderLinhas(linhas)}
+      ${linhas.map(l => renderLinha(l, pratosProduzidos.has(l.nome), "toggleProdutoPrato")).join("")}
       <div class="romaneio-secao-titulo">Componentes (ingredientes)</div>
-      ${renderLinhas(linhasComponentes)}
+      <p class="romaneio-secao-dica">Toque num componente conforme for preparando — quando todos os componentes de um prato estiverem prontos, ele é marcado sozinho.</p>
+      ${linhasComponentes.map(l => renderLinha(l, componentesProduzidos.has(l.nome), "toggleProdutoComponente")).join("")}
     `;
   }
+}
 
-  document.getElementById("resultado-overlay").style.display = "flex";
+function toggleProdutoComponente(nome) {
+  if (componentesProduzidos.has(nome)) componentesProduzidos.delete(nome);
+  else componentesProduzidos.add(nome);
+
+  Object.entries(mapaPratoComponentes).forEach(([prato, comps]) => {
+    const completo = [...comps].every(c => componentesProduzidos.has(c));
+    if (completo) pratosProduzidos.add(prato);
+    else pratosProduzidos.delete(prato);
+  });
+
+  renderResultadoRomaneio();
+}
+
+function toggleProdutoPrato(nome) {
+  if (pratosProduzidos.has(nome)) pratosProduzidos.delete(nome);
+  else pratosProduzidos.add(nome);
+  renderResultadoRomaneio();
 }
 
 function fecharResultado() {
