@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.15";
+const VERSAO_CARDAPIO = "1.16";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -1105,6 +1105,26 @@ function renderSucesso(total, pedidoId, promocoesFaltando) {
         <h2 class="serif">Pedido confirmado!</h2>
         <p>Esse é o nosso presente de boas-vindas para você — sem nenhum custo. Já entramos em produção e a entrega também é por nossa conta. Obrigado por escolher a Nativa!</p>
         ${promoHtml}
+        <button class="btn-voltar-cardapio" onclick="renderCardapio()">Voltar ao cardápio</button>
+      </div>
+    `;
+    return;
+  }
+
+  const formaPagamento = (clienteDados && clienteDados.formaPagamento) || "";
+
+  if (formaPagamento && formaPagamento !== "Pix") {
+    const mensagem = formaPagamento === "Carteira"
+      ? "Seu pedido foi registrado e será lançado na carteira do cliente, conforme sua forma de pagamento cadastrada. Não é necessário pagar agora."
+      : "Seu pedido foi registrado. O pagamento será cobrado no cartão de crédito cadastrado, conforme sua forma de pagamento cadastrada. Não é necessário pagar agora.";
+
+    appEl.innerHTML = `
+      <div class="tela-central">
+        <div class="sucesso-icone">✅</div>
+        <h2 class="serif">Pedido enviado!</h2>
+        <p>${mensagem}</p>
+        ${promoHtml}
+        <p style="margin-top:14px;font-size:0.76rem;">Já entramos em produção. Prazo de entrega: até 5 dias úteis.</p>
         <button class="btn-voltar-cardapio" onclick="renderCardapio()">Voltar ao cardápio</button>
       </div>
     `;
