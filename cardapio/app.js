@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.14";
+const VERSAO_CARDAPIO = "1.15";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -255,8 +255,9 @@ function fecharBoasVindas() {
 function renderLoading() {
   appEl.innerHTML = `
     <div class="tela-central">
-      <div class="icone">🌱</div>
+      <div class="icone icone-loading">🌱</div>
       <h2>Carregando cardápio...</h2>
+      <div class="spinner-cardapio"></div>
     </div>
   `;
 }

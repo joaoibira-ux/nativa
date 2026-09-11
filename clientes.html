@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Clientes" />
   <title>NATIVA - Clientes</title>
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./style.css?v=20" />
+  <link rel="stylesheet" href="./style.css?v=21" />
 </head>
 <body>
 
@@ -18,7 +18,7 @@
   <span id="versao-app" class="header-versao"></span>
 </header>
 
-<div id="lista" class="lista"></div>
+<div id="lista" class="lista"><div class="loading-inline"><div class="spinner"></div><span>Carregando...</span></div></div>
 <button class="fab" id="fab" onclick="abrirFormulario()">+</button>
 
 <div id="form-overlay" class="form-overlay" style="display:none">
@@ -101,7 +101,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="./app.js?v=27"></script>
+<script src="./app.js?v=28"></script>
 <script src="./clientes.js?v=11"></script>
 </body>
 </html>

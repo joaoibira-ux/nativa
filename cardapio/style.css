@@ -78,6 +78,30 @@ header {
 .tela-central h2 { font-size: 1.1rem; color: #e8c473; }
 .tela-central p { font-size: 0.88rem; color: #cbb083; max-width: 320px; line-height: 1.5; }
 
+.icone-loading { animation: cardapio-pulse 1.1s ease-in-out infinite; }
+
+.spinner-cardapio {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(232, 196, 115, 0.2);
+  border-top-color: #e8c473;
+  border-radius: 50%;
+  animation: cardapio-spin 0.7s linear infinite;
+}
+
+@keyframes cardapio-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.7; }
+}
+
+@keyframes cardapio-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icone-loading, .spinner-cardapio { animation-duration: 1.8s; }
+}
+
 /* ---- Conteúdo ---- */
 .conteudo {
   flex: 1;
