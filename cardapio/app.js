@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.17";
+const VERSAO_CARDAPIO = "1.18";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";

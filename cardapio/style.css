@@ -337,15 +337,19 @@ header {
 .link-especiais {
   flex-shrink: 0;
   margin-top: 12px;
-  background: none;
-  border: none;
-  color: #a3762a;
+  display: block;
+  width: 100%;
+  background: linear-gradient(165deg, #f3e6c4, #e9d3a3);
+  border: 1.5px solid #c9a668;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(60,40,10,0.12), inset 0 0 0 1px rgba(255,255,255,0.35);
+  color: #6b4f22;
   font-size: 0.8rem;
   font-weight: 700;
-  text-decoration: underline;
+  text-decoration: none;
   cursor: pointer;
-  text-align: left;
-  padding: 6px 0;
+  text-align: center;
+  padding: 10px 12px;
 }
 
 .overlay-footer.coluna-footer { flex-wrap: wrap; }
@@ -388,19 +392,20 @@ header {
   align-items: center;
   gap: 10px;
   padding: 11px 13px;
-  background: #fffdf8;
-  border: 1.5px solid #e6d3a8;
+  background: linear-gradient(165deg, #f3e6c4, #e9d3a3);
+  border: 1.5px solid #c9a668;
   border-radius: 10px;
   cursor: pointer;
   font-size: 0.86rem;
   color: #3a2a16;
+  box-shadow: 0 2px 8px rgba(60,40,10,0.12), inset 0 0 0 1px rgba(255,255,255,0.35);
   -webkit-tap-highlight-color: transparent;
   transition: border-color .1s, background .1s;
 }
 .opcao-item.selecionado {
-  border-color: #b8862f;
-  background: #faefd3;
-  box-shadow: 0 1px 4px rgba(184,134,47,0.18);
+  border-color: #8a6620;
+  background: linear-gradient(165deg, #f6e2a0, #d9ae4f);
+  box-shadow: 0 2px 8px rgba(138,102,32,0.3), inset 0 0 0 1px rgba(255,255,255,0.45);
 }
 .opcao-item.desabilitado { opacity: 0.4; pointer-events: none; }
 
@@ -489,8 +494,8 @@ header {
 }
 
 .especial-card {
-  background: #fffdf8;
-  border: 1.5px solid #e6d3a8;
+  background: linear-gradient(165deg, #f3e6c4, #e9d3a3);
+  border: 1.5px solid #c9a668;
   border-radius: 12px;
   padding: 14px 10px;
   text-align: center;
@@ -498,6 +503,7 @@ header {
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  box-shadow: 0 2px 8px rgba(60,40,10,0.12), inset 0 0 0 1px rgba(255,255,255,0.35);
 }
 .especial-card .icone-circulo { margin-bottom: 2px; }
 .especial-nome { font-size: 0.78rem; font-weight: 700; color: #2e2013; line-height: 1.3; }
