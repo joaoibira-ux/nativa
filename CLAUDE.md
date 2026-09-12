@@ -17,7 +17,7 @@ A versão atual está em `app.js` → `VERSAO_NATIVA`.
 
 - Sempre commit + push após qualquer mudança, sem perguntar
 - Firebase project: `sistema-nativa-ibira`
-- GitHub repo: `joaoibira-ux/nativa` (GitHub Pages com domínio próprio: `nativa.gwrevestimentos.com.br`, configurado via arquivo `CNAME` na raiz + registro DNS CNAME no Registro.br apontando pra `joaoibira-ux.github.io`)
+- GitHub repo: `joaoibira-ux/nativa` (GitHub Pages: `joaoibira-ux.github.io/nativa`). Migração pendente pra domínio próprio `nativa.gwrevestimentos.com.br` — NÃO recriar o arquivo `CNAME` na raiz nem apontar links pra esse domínio até o João confirmar que criou o registro DNS CNAME no Registro.br (nome "nativa" → "joaoibira-ux.github.io.") e que o domínio já resolve; assim que o CNAME é commitado, o GitHub Pages redireciona automaticamente o domínio antigo pro novo, e se o DNS ainda não resolver isso derruba o sistema inteiro (já aconteceu em 2026-09-12).
 - Hospedagem estática (GitHub Pages) + Firestore como banco de dados, no mesmo formato do Sistema IBIRÁ
 - Arquivos do site ficam na raiz do repositório (index.html, app.js, etc.), como no IBIRÁ
 - Firestore regras abertas (`allow read, write: if true`) — igual ao IBIRÁ

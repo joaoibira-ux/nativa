@@ -2,7 +2,7 @@
 
 Sistema de gestão (Clientes, Matéria-Prima, Produtos, Pedidos, Caixa, A Receber/Pagar) - PWA estática hospedada no GitHub Pages, usando Firebase Firestore como banco de dados (mesmo modelo do Sistema IBIRÁ).
 
-- Site: https://nativa.gwrevestimentos.com.br/
+- Site: https://joaoibira-ux.github.io/nativa/
 - Firebase project: `sistema-nativa-ibira`
 
 ## Estrutura
