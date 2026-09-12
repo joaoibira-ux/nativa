@@ -165,8 +165,12 @@ function enviarCardapioWhatsapp() {
   }
 
   const texto = textoConviteCardapio(c);
-  const urlWhatsapp = "https://wa.me/" + numero + "?text=" + encodeURIComponent(texto);
-  window.open(urlWhatsapp, "_blank");
+  // api.whatsapp.com em vez de wa.me, e location.href em vez de window.open:
+  // dentro do PWA instalado, wa.me + nova aba às vezes só traz o WhatsApp pra
+  // frente sem trocar de conversa, ficando na última conversa aberta em vez
+  // de abrir a do número passado na URL.
+  const urlWhatsapp = "https://api.whatsapp.com/send?phone=" + numero + "&text=" + encodeURIComponent(texto);
+  window.location.href = urlWhatsapp;
 }
 
 async function copiarLinkCardapio() {
