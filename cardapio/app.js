@@ -1,4 +1,4 @@
-const VERSAO_CARDAPIO = "1.16";
+const VERSAO_CARDAPIO = "1.17";
 
 const PIX_CHAVE = "062.911.904-00";
 const PIX_FAVORECIDO = "Fernanda Souza";
@@ -238,8 +238,8 @@ function renderBoasVindas(destino) {
     <div class="tela-central">
       <div class="icone">🌱</div>
       <h2 class="serif">Seja muito bem-vindo(a)${clienteNome ? ", " + escHtml(clienteNome.split(" ")[0]) : ""}!</h2>
-      <p>É um prazer ter você com a gente na Nativa. Para celebrar esse começo, <strong>sua primeira escolha no cardápio é por nossa conta</strong> — um presente de boas-vindas, sem custo nenhum. E a entrega até você também é por nossa conta.</p>
-      <p style="margin-top:10px;">Escolha à vontade — o que você montar primeiro já é seu presente. 🎁</p>
+      <p>É um prazer ter você com a gente na Nativa. Para celebrar esse começo, você ganha <strong>1 Iogurte Natural Artesanal de presente</strong>, por nossa conta, junto com seu pedido. E a entrega até você também é por nossa conta.</p>
+      <p style="margin-top:10px;">Monte seu pedido à vontade — o presente já entra sozinho. 🎁</p>
       <button class="btn-voltar-cardapio" onclick="fecharBoasVindas()">Ver o cardápio</button>
     </div>
   `;
@@ -855,29 +855,24 @@ function calcularResumoCarrinho() {
     }
   });
 
-  const brindesIogurte = carrinho
+  const brindesIogurtePratoPronto = carrinho
     .filter(item => item.especial)
     .reduce((soma, item) => soma + item.quantidade, 0);
 
-  // Presente de boas-vindas: 1 unidade do primeiro item escolhido pelo
-  // cliente sem pedido anterior nenhum — não o pedido inteiro.
-  let descontoPresente = 0;
-  let itemPresenteId = null;
-  if (clienteElegivelPresente && carrinho.length > 0) {
-    const primeiroItem = carrinho[0];
-    descontoPresente = primeiroItem.valorUnitario;
-    itemPresenteId = primeiroItem.idItem;
-  }
+  // Presente de boas-vindas: 1 Iogurte Natural Artesanal grátis pro cliente
+  // sem pedido anterior nenhum — não desconta mais o primeiro item do
+  // pedido, é sempre o mesmo brinde fixo.
+  const brindeBoasVindas = (clienteElegivelPresente && carrinho.length > 0) ? 1 : 0;
 
   return {
     subtotalBruto,
     descontoCombo,
-    descontoPresente,
-    itemPresenteId,
-    total: Math.max(0, subtotalBruto - descontoCombo - descontoPresente),
+    total: Math.max(0, subtotalBruto - descontoCombo),
     avisosCombo,
     promocoesFaltando,
-    brindesIogurte
+    brindesIogurtePratoPronto,
+    brindeBoasVindas,
+    brindesIogurte: brindesIogurtePratoPronto + brindeBoasVindas
   };
 }
 
@@ -891,13 +886,11 @@ function renderCarrinho() {
   const itensHtml = carrinho.length === 0
     ? `<div class="empty-carrinho">Seu pedido está vazio.</div>`
     : carrinho.map(item => {
-      const ehPresente = item.idItem === resumo.itemPresenteId;
       const valorItem = item.valorUnitario * item.quantidade;
-      const valorComPresente = ehPresente ? valorItem - resumo.descontoPresente : valorItem;
       return `
       <div class="carrinho-item">
         <div class="carrinho-item-topo">
-          <div class="carrinho-item-nome">${escHtml(item.categoriaNome)}${ehPresente ? ` <span class="selo-presente">🎁 presente</span>` : ""}</div>
+          <div class="carrinho-item-nome">${escHtml(item.categoriaNome)}</div>
           <div class="carrinho-item-acoes">
             ${!item.especial ? `<button class="btn-editar-carrinho" onclick="editarItemCarrinho('${item.idItem}')">✏️</button>` : ""}
             <button class="btn-remover-carrinho" onclick="removerDoCarrinho('${item.idItem}')">🗑️</button>
@@ -906,7 +899,7 @@ function renderCarrinho() {
         ${item.descricao ? `<div class="carrinho-item-desc">${escHtml(item.descricao)}</div>` : ""}
         <div class="carrinho-item-rodape">
           <span class="carrinho-item-qtd">Qtd: ${item.quantidade} × ${fmtMoeda(item.valorUnitario)}</span>
-          <span class="carrinho-item-valor">${ehPresente ? `<s style="opacity:0.5;font-weight:500;">${fmtMoeda(valorItem)}</s> ` : ""}${fmtMoeda(valorComPresente)}</span>
+          <span class="carrinho-item-valor">${fmtMoeda(valorItem)}</span>
         </div>
       </div>
     `;
@@ -919,11 +912,11 @@ function renderCarrinho() {
       ${p.economia > 0 ? ` (economize ${fmtMoeda(p.economia)})` : ""}!
     </div>
   `).join("");
-  const brindeHtml = resumo.brindesIogurte > 0
-    ? `<div class="combo-aviso">🎁 Você ganhou ${resumo.brindesIogurte} Iogurte${resumo.brindesIogurte > 1 ? "s" : ""} Natural Artesanal grátis pelos pratos prontos!</div>`
+  const brindeHtml = resumo.brindesIogurtePratoPronto > 0
+    ? `<div class="combo-aviso">🎁 Você ganhou ${resumo.brindesIogurtePratoPronto} Iogurte${resumo.brindesIogurtePratoPronto > 1 ? "s" : ""} Natural Artesanal grátis pelos pratos prontos!</div>`
     : "";
-  const presenteHtml = resumo.descontoPresente > 0
-    ? `<div class="combo-aviso">🎁 Sua primeira escolha é nosso presente de boas-vindas — ${fmtMoeda(resumo.descontoPresente)} por nossa conta!</div>`
+  const presenteHtml = resumo.brindeBoasVindas > 0
+    ? `<div class="combo-aviso">🎁 Presente de boas-vindas: 1 Iogurte Natural Artesanal grátis, por nossa conta!</div>`
     : "";
 
   const c = clienteDados || {};
@@ -950,7 +943,6 @@ function renderCarrinho() {
           <div class="carrinho-resumo">
             <div class="carrinho-resumo-linha"><span>Subtotal</span><span>${fmtMoeda(resumo.subtotalBruto)}</span></div>
             ${resumo.descontoCombo > 0 ? `<div class="carrinho-resumo-linha desconto"><span>Desconto combo</span><span>-${fmtMoeda(resumo.descontoCombo)}</span></div>` : ""}
-            ${resumo.descontoPresente > 0 ? `<div class="carrinho-resumo-linha desconto"><span>Presente de boas-vindas</span><span>-${fmtMoeda(resumo.descontoPresente)}</span></div>` : ""}
             <div class="carrinho-resumo-linha total"><span>Total</span><span>${fmtMoeda(resumo.total)}</span></div>
           </div>
         ` : ""}
@@ -988,13 +980,24 @@ async function finalizarPedido() {
     subtotal: item.valorUnitario * item.quantidade
   }));
 
-  if (resumo.brindesIogurte > 0) {
+  if (resumo.brindesIogurtePratoPronto > 0) {
     itens.push({
       produtoId: null,
       produtoNome: "Iogurte Natural Artesanal (brinde — pratos prontos)",
       ud: "Ud",
       valorUnitario: 0,
-      quantidade: resumo.brindesIogurte,
+      quantidade: resumo.brindesIogurtePratoPronto,
+      subtotal: 0
+    });
+  }
+
+  if (resumo.brindeBoasVindas > 0) {
+    itens.push({
+      produtoId: null,
+      produtoNome: "Iogurte Natural Artesanal (presente de boas-vindas)",
+      ud: "Ud",
+      valorUnitario: 0,
+      quantidade: resumo.brindeBoasVindas,
       subtotal: 0
     });
   }
@@ -1011,7 +1014,6 @@ async function finalizarPedido() {
       itens,
       subtotalBruto: resumo.subtotalBruto,
       descontoCombo: resumo.descontoCombo,
-      descontoPresente: resumo.descontoPresente,
       total: resumo.total,
       criadoEm: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -1024,7 +1026,7 @@ async function finalizarPedido() {
   carrinho = [];
   sessionStorage.removeItem(CARRINHO_KEY);
   clienteElegivelPresente = false;
-  renderSucesso(resumo.total, pedidoRef.id, resumo.promocoesFaltando);
+  renderSucesso(resumo.total, pedidoRef.id, resumo.promocoesFaltando, resumo.brindeBoasVindas);
 }
 
 /* ---------------- PIX (payload EMV / Copia e Cola + QR Code) ---------------- */
@@ -1090,20 +1092,24 @@ function gerarPayloadPix({ chave, nome, cidade, valor, txid }) {
   return payload;
 }
 
-function renderSucesso(total, pedidoId, promocoesFaltando) {
+function renderSucesso(total, pedidoId, promocoesFaltando, brindeBoasVindas) {
   const promoHtml = (promocoesFaltando || []).map(p => `
     <div class="promo-aviso">
       🎯 No próximo pedido, peça mais <strong>${p.faltam}</strong> ${escHtml(p.nome)} e desbloqueie o combo de ${p.proximoQtd} un. por ${fmtMoeda(p.precoCombo)}
       ${p.economia > 0 ? ` (economize ${fmtMoeda(p.economia)})` : ""}!
     </div>
   `).join("");
+  const brindeBoasVindasHtml = brindeBoasVindas > 0
+    ? `<p style="margin-top:10px;">🎁 Seu presente de boas-vindas — 1 Iogurte Natural Artesanal grátis — já está incluso no pedido!</p>`
+    : "";
 
   if (total <= 0) {
     appEl.innerHTML = `
       <div class="tela-central">
         <div class="sucesso-icone">🎁</div>
         <h2 class="serif">Pedido confirmado!</h2>
-        <p>Esse é o nosso presente de boas-vindas para você — sem nenhum custo. Já entramos em produção e a entrega também é por nossa conta. Obrigado por escolher a Nativa!</p>
+        <p>Seu pedido foi registrado sem nenhum custo. Já entramos em produção e a entrega também é por nossa conta. Obrigado por escolher a Nativa!</p>
+        ${brindeBoasVindasHtml}
         ${promoHtml}
         <button class="btn-voltar-cardapio" onclick="renderCardapio()">Voltar ao cardápio</button>
       </div>
@@ -1123,6 +1129,7 @@ function renderSucesso(total, pedidoId, promocoesFaltando) {
         <div class="sucesso-icone">✅</div>
         <h2 class="serif">Pedido enviado!</h2>
         <p>${mensagem}</p>
+        ${brindeBoasVindasHtml}
         ${promoHtml}
         <p style="margin-top:14px;font-size:0.76rem;">Já entramos em produção. Prazo de entrega: até 5 dias úteis.</p>
         <button class="btn-voltar-cardapio" onclick="renderCardapio()">Voltar ao cardápio</button>
@@ -1145,6 +1152,7 @@ function renderSucesso(total, pedidoId, promocoesFaltando) {
       <div class="sucesso-icone">✅</div>
       <h2 class="serif">Pedido enviado!</h2>
       <p>Seu pedido foi registrado. Para confirmar e entrar em produção, realize o pagamento via PIX abaixo.</p>
+      ${brindeBoasVindasHtml}
       ${promoHtml}
       <div class="pix-box">
         <div class="pix-qrcode-wrap" id="pix-qrcode"></div>
