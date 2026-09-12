@@ -17,7 +17,7 @@ A versão atual está em `app.js` → `VERSAO_NATIVA`.
 
 - Sempre commit + push após qualquer mudança, sem perguntar
 - Firebase project: `sistema-nativa-ibira`
-- GitHub repo: `joaoibira-ux/nativa` (GitHub Pages: `joaoibira-ux.github.io/nativa`)
+- GitHub repo: `joaoibira-ux/nativa` (GitHub Pages com domínio próprio: `nativa.gwrevestimentos.com.br`, configurado via arquivo `CNAME` na raiz + registro DNS CNAME no Registro.br apontando pra `joaoibira-ux.github.io`)
 - Hospedagem estática (GitHub Pages) + Firestore como banco de dados, no mesmo formato do Sistema IBIRÁ
 - Arquivos do site ficam na raiz do repositório (index.html, app.js, etc.), como no IBIRÁ
 - Firestore regras abertas (`allow read, write: if true`) — igual ao IBIRÁ

@@ -120,7 +120,7 @@ function definirModoFormulario(visualizacao) {
 }
 
 function linkCardapio(clienteId) {
-  return "https://joaoibira-ux.github.io/nativa/cardapio/?cliente=" + clienteId;
+  return "https://nativa.gwrevestimentos.com.br/cardapio/?cliente=" + clienteId;
 }
 
 function abrirCardapio() {
