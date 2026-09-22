@@ -26,8 +26,20 @@ function inicializarGarconete() {
   garconeteFunctions = garconeteApp.functions();
 }
 
-function suportaGarconeteVoz() {
-  return !!(window.SpeechRecognition || window.webkitSpeechRecognition) && !!window.speechSynthesis;
+// Reconhecimento de voz via Web Speech API só existe em navegadores com
+// motor Chromium (Chrome/Edge/Android WebView) — no iOS, TODO navegador usa
+// o motor da Apple (WebKit) por baixo, que nunca implementou essa API pra
+// páginas web (só apps nativos, como o app do Claude/ChatGPT, têm acesso ao
+// ditado nativo da Apple). Por isso, no iPhone caímos pro modo de texto:
+// o cliente digita ou usa o microfone do PRÓPRIO teclado do iOS (o ícone ao
+// lado da barra de espaço), que dita direto no campo — funciona em
+// qualquer navegador porque é um recurso do sistema, não da página.
+function suportaReconhecimentoDeVoz() {
+  return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+}
+
+function suportaFalaSintetizada() {
+  return !!window.speechSynthesis;
 }
 
 // Resumo do cardápio + do que já está selecionado, mandado a cada chamada
@@ -155,10 +167,6 @@ function executarToolGarconete(nome, input) {
 /* ---------------- UI da garçonete (overlay flutuante por cima do wizard) ---------------- */
 
 function abrirGarconete() {
-  if (!suportaGarconeteVoz()) {
-    alert("Seu navegador não suporta reconhecimento de voz. Tente pelo Chrome no Android, ou monte o pedido tocando nas opções normalmente.");
-    return;
-  }
   inicializarGarconete();
   garconeteHistorico = [];
   renderGarconeteOverlay();
@@ -166,13 +174,15 @@ function abrirGarconete() {
 
 function fecharGarconete() {
   pararEscutaGarconete();
-  window.speechSynthesis.cancel();
+  if (suportaFalaSintetizada()) window.speechSynthesis.cancel();
   const overlay = document.getElementById("garconete-overlay");
   if (overlay) overlay.remove();
 }
 
 function renderGarconeteOverlay() {
   if (document.getElementById("garconete-overlay")) return;
+  const comReconhecimentoNativo = suportaReconhecimentoDeVoz();
+
   const div = document.createElement("div");
   div.id = "garconete-overlay";
   div.className = "garconete-overlay";
@@ -182,13 +192,44 @@ function renderGarconeteOverlay() {
       <button class="garconete-fechar" onclick="fecharGarconete()">✕</button>
     </div>
     <div class="garconete-transcript" id="garconete-transcript"></div>
-    <div class="garconete-status" id="garconete-status">Toque no microfone e fale seu pedido</div>
-    <button class="garconete-mic" id="garconete-mic-btn" onclick="alternarEscutaGarconete()">🎤</button>
+    <div class="garconete-status" id="garconete-status">${comReconhecimentoNativo ? "Toque no microfone e fale seu pedido" : "Toque no 🎤 do teclado e fale, ou digite seu pedido"}</div>
+    ${comReconhecimentoNativo ? `
+      <button class="garconete-mic" id="garconete-mic-btn" onclick="alternarEscutaGarconete()">🎤</button>
+    ` : `
+      <div class="garconete-input-linha">
+        <input type="text" id="garconete-input-texto" class="garconete-input-texto" placeholder="Toque aqui e use o microfone do teclado..." autocomplete="off" />
+        <button class="garconete-btn-enviar" id="garconete-btn-enviar" onclick="enviarTextoGarconete()">➤</button>
+      </div>
+    `}
   `;
   document.body.appendChild(div);
-  adicionarFalaTranscript("garconete", clienteNome
+
+  const saudacao = clienteNome
     ? `Oi, ${clienteNome.split(" ")[0]}! Sou a garçonete virtual da Nativa. O que você vai querer hoje?`
-    : "Oi! Sou a garçonete virtual da Nativa. O que você vai querer hoje?");
+    : "Oi! Sou a garçonete virtual da Nativa. O que você vai querer hoje?";
+  adicionarFalaTranscript("garconete", saudacao);
+  falarGarconete(saudacao);
+
+  if (!comReconhecimentoNativo) {
+    const input = document.getElementById("garconete-input-texto");
+    if (input) {
+      input.focus();
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") enviarTextoGarconete();
+      });
+    }
+  }
+}
+
+function enviarTextoGarconete() {
+  if (garconeteProcessando) return;
+  const input = document.getElementById("garconete-input-texto");
+  if (!input) return;
+  const texto = input.value.trim();
+  if (!texto) return;
+  input.value = "";
+  adicionarFalaTranscript("cliente", texto);
+  processarFalaGarconete(texto);
 }
 
 function adicionarFalaTranscript(quem, texto) {
@@ -251,6 +292,7 @@ function pararEscutaGarconete() {
 
 function falarGarconete(texto) {
   return new Promise((resolve) => {
+    if (!suportaFalaSintetizada()) { resolve(); return; }
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(texto);
     utter.lang = "pt-BR";
@@ -260,6 +302,18 @@ function falarGarconete(texto) {
   });
 }
 
+// Desabilita/reabilita o controle de entrada certo (botão de microfone ou
+// campo de texto + botão enviar), dependendo de qual modo está ativo.
+function definirControlesGarconeteHabilitados(habilitado) {
+  const micBtn = document.getElementById("garconete-mic-btn");
+  if (micBtn) micBtn.disabled = !habilitado;
+  const input = document.getElementById("garconete-input-texto");
+  if (input) input.disabled = !habilitado;
+  const enviarBtn = document.getElementById("garconete-btn-enviar");
+  if (enviarBtn) enviarBtn.disabled = !habilitado;
+  if (habilitado && input) input.focus();
+}
+
 // Uma "fala do cliente" pode virar várias chamadas à Cloud Function em
 // sequência quando o Claude pede tool_use — cada tool é executada aqui no
 // navegador (mexendo no wizard de verdade) e o resultado volta como
@@ -267,8 +321,7 @@ function falarGarconete(texto) {
 async function processarFalaGarconete(mensagemInicial) {
   garconeteProcessando = true;
   atualizarStatusGarconete("Pensando...");
-  const btn = document.getElementById("garconete-mic-btn");
-  if (btn) btn.disabled = true;
+  definirControlesGarconeteHabilitados(false);
 
   try {
     let proximaEntrada = mensagemInicial;
@@ -303,18 +356,19 @@ async function processarFalaGarconete(mensagemInicial) {
       break;
     }
 
+    const statusPronto = suportaReconhecimentoDeVoz() ? "Toque no microfone pra responder" : "Digite ou dite sua resposta";
     if (respostaTexto) {
       adicionarFalaTranscript("garconete", respostaTexto);
-      atualizarStatusGarconete("Toque no microfone pra responder");
+      atualizarStatusGarconete(statusPronto);
       await falarGarconete(respostaTexto);
     } else {
-      atualizarStatusGarconete("Toque no microfone pra responder");
+      atualizarStatusGarconete(statusPronto);
     }
   } catch (e) {
     adicionarFalaTranscript("garconete", "Desculpa, tive um probleminha aqui. Pode repetir?");
-    atualizarStatusGarconete("Toque no microfone pra tentar de novo");
+    atualizarStatusGarconete(suportaReconhecimentoDeVoz() ? "Toque no microfone pra tentar de novo" : "Tente digitar de novo");
   } finally {
     garconeteProcessando = false;
-    if (btn) btn.disabled = false;
+    definirControlesGarconeteHabilitados(true);
   }
 }
