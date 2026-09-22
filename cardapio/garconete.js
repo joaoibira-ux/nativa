@@ -168,6 +168,7 @@ function executarToolGarconete(nome, input) {
 
 function abrirGarconete() {
   inicializarGarconete();
+  carregarVozGarconete();
   garconeteHistorico = [];
   renderGarconeteOverlay();
 }
@@ -290,12 +291,54 @@ function pararEscutaGarconete() {
   if (garconeteReconhecimento) garconeteReconhecimento.stop();
 }
 
+// Nomes de vozes em português conhecidas por soarem melhor que a voz
+// robótica padrão de cada plataforma — em ordem de preferência. "Luciana" é
+// a voz pt-BR do iOS/macOS (mesma usada pela Siri); as demais cobrem
+// Chrome/Android e Windows. Se nenhuma bater, cai pra qualquer voz pt-BR
+// disponível e, por último, qualquer voz pt.
+const NOMES_VOZ_PREFERIDOS = [
+  "luciana", "google português do brasil", "microsoft francisca", "microsoft maria", "joana"
+];
+
+let vozGarconeteEscolhida = null;
+let vozGarconeteCarregada = false;
+
+function escolherVozGarconete() {
+  if (!suportaFalaSintetizada()) return null;
+  const vozes = window.speechSynthesis.getVoices();
+  if (!vozes.length) return null;
+
+  for (const nomePreferido of NOMES_VOZ_PREFERIDOS) {
+    const achou = vozes.find(v => v.name.toLowerCase().includes(nomePreferido));
+    if (achou) return achou;
+  }
+  return vozes.find(v => /^pt-br$/i.test(v.lang)) || vozes.find(v => /^pt/i.test(v.lang)) || null;
+}
+
+// getVoices() às vezes retorna vazio na primeira chamada porque a lista
+// carrega de forma assíncrona (mais comum no Chrome) — por isso escutamos
+// "voiceschanged" também, além de tentar direto.
+function carregarVozGarconete() {
+  if (vozGarconeteCarregada || !suportaFalaSintetizada()) return;
+  vozGarconeteEscolhida = escolherVozGarconete();
+  if (vozGarconeteEscolhida) {
+    vozGarconeteCarregada = true;
+    return;
+  }
+  window.speechSynthesis.onvoiceschanged = () => {
+    vozGarconeteEscolhida = escolherVozGarconete();
+    vozGarconeteCarregada = true;
+  };
+}
+
 function falarGarconete(texto) {
   return new Promise((resolve) => {
     if (!suportaFalaSintetizada()) { resolve(); return; }
+    carregarVozGarconete();
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(texto);
     utter.lang = "pt-BR";
+    if (vozGarconeteEscolhida) utter.voice = vozGarconeteEscolhida;
     utter.onend = resolve;
     utter.onerror = resolve;
     window.speechSynthesis.speak(utter);
