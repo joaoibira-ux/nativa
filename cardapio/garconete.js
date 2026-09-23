@@ -195,7 +195,10 @@ function renderGarconeteOverlay() {
     <div class="garconete-transcript" id="garconete-transcript"></div>
     <div class="garconete-status" id="garconete-status">${comReconhecimentoNativo ? "Toque no microfone e fale seu pedido" : "Toque no 🎤 do teclado e fale, ou digite seu pedido"}</div>
     ${comReconhecimentoNativo ? `
-      <button class="garconete-mic" id="garconete-mic-btn" onclick="alternarEscutaGarconete()">🎤</button>
+      <button class="garconete-mic" id="garconete-mic-btn" onclick="alternarEscutaGarconete()">
+        <span class="garconete-mic-robo">🤖</span>
+        <span class="garconete-mic-laco">🎀</span>
+      </button>
     ` : `
       <div class="garconete-input-linha">
         <input type="text" id="garconete-input-texto" class="garconete-input-texto" placeholder="Toque aqui e use o microfone do teclado..." autocomplete="off" />
@@ -209,7 +212,7 @@ function renderGarconeteOverlay() {
     ? `Oi, ${clienteNome.split(" ")[0]}! Sou a garçonete virtual da Nativa. O que você vai querer hoje?`
     : "Oi! Sou a garçonete virtual da Nativa. O que você vai querer hoje?";
   adicionarFalaTranscript("garconete", saudacao);
-  falarGarconete(saudacao);
+  falarEDepoisOuvirGarconete(saudacao);
 
   if (!comReconhecimentoNativo) {
     const input = document.getElementById("garconete-input-texto");
@@ -345,6 +348,18 @@ function falarGarconete(texto) {
   });
 }
 
+// Depois que a garçonete termina de falar, já liga o microfone sozinha —
+// só faz sentido onde existe reconhecimento de voz nativo (Android/Chrome);
+// no modo texto (iPhone) o cliente ainda precisa tocar no microfone do
+// próprio teclado, que a página não tem como acionar sozinha.
+async function falarEDepoisOuvirGarconete(texto) {
+  await falarGarconete(texto);
+  const painelAindaAberto = !!document.getElementById("garconete-overlay");
+  if (painelAindaAberto && suportaReconhecimentoDeVoz() && !garconeteOuvindo && !garconeteProcessando) {
+    iniciarEscutaGarconete();
+  }
+}
+
 // Desabilita/reabilita o controle de entrada certo (botão de microfone ou
 // campo de texto + botão enviar), dependendo de qual modo está ativo.
 function definirControlesGarconeteHabilitados(habilitado) {
@@ -403,7 +418,7 @@ async function processarFalaGarconete(mensagemInicial) {
     if (respostaTexto) {
       adicionarFalaTranscript("garconete", respostaTexto);
       atualizarStatusGarconete(statusPronto);
-      await falarGarconete(respostaTexto);
+      await falarEDepoisOuvirGarconete(respostaTexto);
     } else {
       atualizarStatusGarconete(statusPronto);
     }

@@ -781,6 +781,14 @@ textarea.obs-input {
   -webkit-tap-highlight-color: transparent;
 }
 .fab-garconete:active { transform: scale(0.94); }
+.fab-garconete-laco, .garconete-mic-laco {
+  position: absolute;
+  top: -2px;
+  right: 2px;
+  font-size: 0.85rem;
+  transform: rotate(18deg);
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+}
 
 /* Painel compacto ancorado na base — de propósito NÃO cobre a tela
    inteira, pra o cliente ver o cardápio/wizard sendo preenchido ao vivo
@@ -863,6 +871,7 @@ textarea.obs-input {
 }
 
 .garconete-mic {
+  position: relative;
   align-self: center;
   width: 60px;
   height: 60px;
@@ -871,6 +880,9 @@ textarea.obs-input {
   background: linear-gradient(180deg, #c9a13f, #9c7324);
   color: #fff;
   font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   margin-bottom: 6px;
   flex-shrink: 0;
@@ -878,6 +890,7 @@ textarea.obs-input {
   transition: transform .15s;
   -webkit-tap-highlight-color: transparent;
 }
+.garconete-mic-laco { font-size: 1rem; }
 .garconete-mic.ouvindo { animation: garconete-pulso 1s ease-in-out infinite; }
 .garconete-mic:disabled { opacity: 0.5; }
 .garconete-mic:active { transform: scale(0.94); }
