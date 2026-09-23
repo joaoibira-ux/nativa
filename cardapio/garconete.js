@@ -180,6 +180,10 @@ function fecharGarconete() {
   if (overlay) overlay.remove();
 }
 
+// Sem chat escrito de propósito: só a voz da garçonete, um jeito de o
+// cliente responder (mic ou o teclado) e um status de uma linha — a tela
+// do cardápio por trás fica quase toda livre, sem um painel de conversa
+// ocupando espaço.
 function renderGarconeteOverlay() {
   if (document.getElementById("garconete-overlay")) return;
   const comReconhecimentoNativo = suportaReconhecimentoDeVoz();
@@ -188,11 +192,7 @@ function renderGarconeteOverlay() {
   div.id = "garconete-overlay";
   div.className = "garconete-overlay";
   div.innerHTML = `
-    <div class="garconete-header">
-      <span class="garconete-titulo">🎙️ Garçonete Nativa</span>
-      <button class="garconete-fechar" onclick="fecharGarconete()">✕</button>
-    </div>
-    <div class="garconete-transcript" id="garconete-transcript"></div>
+    <button class="garconete-fechar" onclick="fecharGarconete()">✕</button>
     <div class="garconete-status" id="garconete-status">${comReconhecimentoNativo ? "Toque no microfone e fale seu pedido" : "Toque no 🎤 do teclado e fale, ou digite seu pedido"}</div>
     ${comReconhecimentoNativo ? `
       <button class="garconete-mic" id="garconete-mic-btn" onclick="alternarEscutaGarconete()">
@@ -211,7 +211,6 @@ function renderGarconeteOverlay() {
   const saudacao = clienteNome
     ? `Oi, ${clienteNome.split(" ")[0]}! Sou a garçonete virtual da Nativa. O que você vai querer hoje?`
     : "Oi! Sou a garçonete virtual da Nativa. O que você vai querer hoje?";
-  adicionarFalaTranscript("garconete", saudacao);
   falarEDepoisOuvirGarconete(saudacao);
 
   if (!comReconhecimentoNativo) {
@@ -232,18 +231,7 @@ function enviarTextoGarconete() {
   const texto = input.value.trim();
   if (!texto) return;
   input.value = "";
-  adicionarFalaTranscript("cliente", texto);
   processarFalaGarconete(texto);
-}
-
-function adicionarFalaTranscript(quem, texto) {
-  const wrap = document.getElementById("garconete-transcript");
-  if (!wrap) return;
-  const bolha = document.createElement("div");
-  bolha.className = "garconete-bolha garconete-bolha-" + quem;
-  bolha.textContent = texto;
-  wrap.appendChild(bolha);
-  wrap.scrollTop = wrap.scrollHeight;
 }
 
 function atualizarStatusGarconete(texto) {
@@ -272,9 +260,7 @@ function iniciarEscutaGarconete() {
   };
 
   garconeteReconhecimento.onresult = (event) => {
-    const texto = event.results[0][0].transcript;
-    adicionarFalaTranscript("cliente", texto);
-    processarFalaGarconete(texto);
+    processarFalaGarconete(event.results[0][0].transcript);
   };
 
   garconeteReconhecimento.onerror = () => {
@@ -416,15 +402,14 @@ async function processarFalaGarconete(mensagemInicial) {
 
     const statusPronto = suportaReconhecimentoDeVoz() ? "Toque no microfone pra responder" : "Digite ou dite sua resposta";
     if (respostaTexto) {
-      adicionarFalaTranscript("garconete", respostaTexto);
       atualizarStatusGarconete(statusPronto);
       await falarEDepoisOuvirGarconete(respostaTexto);
     } else {
       atualizarStatusGarconete(statusPronto);
     }
   } catch (e) {
-    adicionarFalaTranscript("garconete", "Desculpa, tive um probleminha aqui. Pode repetir?");
     atualizarStatusGarconete(suportaReconhecimentoDeVoz() ? "Toque no microfone pra tentar de novo" : "Tente digitar de novo");
+    await falarEDepoisOuvirGarconete("Desculpa, tive um probleminha aqui. Pode repetir?");
   } finally {
     garconeteProcessando = false;
     definirControlesGarconeteHabilitados(true);
