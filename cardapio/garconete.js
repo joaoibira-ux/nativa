@@ -291,33 +291,51 @@ function cancelarDeteccaoToqueLongo() {
 /* ---------------- Reconhecimento de voz nativo (Android/Chrome) ---------------- */
 
 function iniciarEscutaGarconete() {
-  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
-  garconeteReconhecimento = new SpeechRecognitionCtor();
-  garconeteReconhecimento.lang = "pt-BR";
-  garconeteReconhecimento.interimResults = false;
-  garconeteReconhecimento.maxAlternatives = 1;
+  if (garconeteOuvindo) return;
 
-  garconeteReconhecimento.onstart = () => {
-    garconeteOuvindo = true;
-    atualizarFabGarconete();
-  };
+  try {
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    garconeteReconhecimento = new SpeechRecognitionCtor();
+    garconeteReconhecimento.lang = "pt-BR";
+    garconeteReconhecimento.interimResults = false;
+    garconeteReconhecimento.maxAlternatives = 1;
 
-  garconeteReconhecimento.onresult = (event) => {
-    processarFalaGarconete(event.results[0][0].transcript);
-  };
+    garconeteReconhecimento.onstart = () => {
+      garconeteOuvindo = true;
+      atualizarFabGarconete();
+    };
 
-  garconeteReconhecimento.onerror = () => {};
+    garconeteReconhecimento.onresult = (event) => {
+      processarFalaGarconete(event.results[0][0].transcript);
+    };
 
-  garconeteReconhecimento.onend = () => {
+    garconeteReconhecimento.onerror = () => {};
+
+    garconeteReconhecimento.onend = () => {
+      garconeteOuvindo = false;
+      atualizarFabGarconete();
+    };
+
+    garconeteReconhecimento.start();
+  } catch (e) {
+    // O Chrome às vezes recusa iniciar um reconhecimento novo bem em cima
+    // do anterior ter terminado ("already started"/InvalidStateError) --
+    // isso fazia a religada automática falhar caladamente, deixando o
+    // cliente preso precisando tocar de novo. Tenta de novo sozinho um
+    // instante depois, sem exigir toque nenhum.
     garconeteOuvindo = false;
     atualizarFabGarconete();
-  };
-
-  garconeteReconhecimento.start();
+    if (garconeteAtiva && !garconeteProcessando) {
+      setTimeout(() => {
+        if (garconeteAtiva && !garconeteOuvindo && !garconeteProcessando) iniciarEscutaGarconete();
+      }, 350);
+    }
+  }
 }
 
 function pararEscutaGarconete() {
-  if (garconeteReconhecimento) garconeteReconhecimento.stop();
+  if (!garconeteReconhecimento) return;
+  try { garconeteReconhecimento.stop(); } catch (e) {}
 }
 
 /* ---------------- Teclado nativo do iPhone (sem Web Speech API) ---------------- */
