@@ -760,7 +760,7 @@ textarea.obs-input {
   padding: 10px 0 6px;
 }
 
-/* ---- Garçonete de voz ---- */
+/* ---- Garçonete de voz: só o robozinho flutuante, sem painel/chat ---- */
 .fab-garconete {
   position: fixed;
   bottom: calc(max(18px, env(safe-area-inset-bottom)) + 84px);
@@ -779,9 +779,13 @@ textarea.obs-input {
   box-shadow: 0 4px 14px rgba(0,0,0,0.3);
   z-index: 300;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform .15s, background .2s, box-shadow .2s;
 }
 .fab-garconete:active { transform: scale(0.94); }
-.fab-garconete-laco, .garconete-mic-laco {
+.fab-garconete-laco {
   position: absolute;
   top: -2px;
   right: 2px;
@@ -790,107 +794,42 @@ textarea.obs-input {
   filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
 }
 
-/* Barra mínima ancorada na base — de propósito SEM chat escrito: só a voz
-   da garçonete, o controle de resposta do cliente e um status de uma
-   linha, deixando o cardápio/wizard quase todo visível e sendo preenchido
-   ao vivo por trás enquanto o cliente conversa. */
-.garconete-overlay {
-  position: fixed;
-  left: 14px;
-  right: 14px;
-  bottom: max(18px, env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, #2e2013, #1c1409);
-  border: 1px solid #7a5a20;
-  border-radius: 20px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.35);
-  z-index: 400;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 16px 14px;
+/* Ativa (sessão em andamento, ela falando ou pensando) — glow dourado mais forte */
+.fab-garconete.ativa {
+  background: linear-gradient(180deg, #f3d98a, #b8862f);
+  box-shadow: 0 0 0 5px rgba(201,161,63,0.28), 0 4px 14px rgba(0,0,0,0.35);
 }
+.fab-garconete.pensando { opacity: 0.75; }
 
-.garconete-fechar {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  background: none;
-  border: none;
-  color: #f0dcb0;
-  font-size: 1.1rem;
-  cursor: pointer;
-  padding: 4px 8px;
+/* Vez do cliente (microfone) — cor diferente com pulso, tipo "gravando" */
+.fab-garconete.ouvindo {
+  background: linear-gradient(180deg, #e07856, #b8452a);
+  animation: garconete-pulso 1s ease-in-out infinite;
 }
-
-.garconete-status {
-  text-align: center;
-  font-size: 0.78rem;
-  color: #cbb083;
-  padding: 0 24px;
-}
-
-.garconete-mic {
-  position: relative;
-  align-self: center;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: none;
-  background: linear-gradient(180deg, #c9a13f, #9c7324);
-  color: #fff;
-  font-size: 1.6rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-  transition: transform .15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.garconete-mic-laco { font-size: 1rem; }
-.garconete-mic.ouvindo { animation: garconete-pulso 1s ease-in-out infinite; }
-.garconete-mic:disabled { opacity: 0.5; }
-.garconete-mic:active { transform: scale(0.94); }
 
 @keyframes garconete-pulso {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(201,161,63,0.5); }
-  50% { box-shadow: 0 0 0 12px rgba(201,161,63,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184,69,42,0.5); }
+  50% { box-shadow: 0 0 0 14px rgba(184,69,42,0); }
 }
 
-/* Modo texto/ditado do teclado (iOS e qualquer navegador sem Web Speech API) */
-.garconete-input-linha {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  width: 100%;
-  flex-shrink: 0;
-}
-.garconete-input-texto {
-  flex: 1;
-  padding: 12px 14px;
-  border-radius: 20px;
-  border: 1.5px solid #7a5a20;
-  background: rgba(255,255,255,0.08);
-  color: #f0dcb0;
-  font-size: 0.9rem;
-  font-family: inherit;
-}
-.garconete-input-texto::placeholder { color: #a3823f; }
-.garconete-input-texto:disabled { opacity: 0.5; }
-.garconete-btn-enviar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+/* Input 100% invisível — existe só pra focar e abrir o teclado nativo do
+   iPhone (com o microfone de ditado do sistema); o cliente nunca vê essa
+   caixa. font-size 16px evita o zoom automático do Safari ao focar. */
+.garconete-input-oculto {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
   border: none;
-  background: linear-gradient(180deg, #c9a13f, #9c7324);
-  color: #fff;
-  font-size: 1.2rem;
-  cursor: pointer;
-  flex-shrink: 0;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-  -webkit-tap-highlight-color: transparent;
+  opacity: 0;
+  font-size: 16px;
 }
-.garconete-btn-enviar:disabled { opacity: 0.5; }
-.garconete-btn-enviar:active { transform: scale(0.94); }
+
+/* Enquanto a garçonete está ativa, o cliente só acompanha as telas — todo
+   pedido segue por voz, sem clicar em mais nada além do robozinho. */
+body.garconete-modo-assistente #app,
+body.garconete-modo-assistente .fab-carrinho {
+  pointer-events: none;
+}

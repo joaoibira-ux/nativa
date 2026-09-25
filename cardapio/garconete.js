@@ -4,6 +4,11 @@
 // projeto Firebase do Sistema GW (agenteGarconeteNativa), que reaproveita a
 // chave da Anthropic já configurada lá — por isso inicializamos aqui um
 // segundo app do Firebase, só pra chamar essa function.
+//
+// Interface de propósito minimalista: nada de painel/chat na tela, só o
+// robozinho flutuante mudando de estado (robô/microfone/cor) — enquanto ele
+// está ativo, o cliente só acompanha as telas mudando sozinhas, sem clicar
+// em mais nada além do próprio robozinho.
 const GARCONETE_FIREBASE_CONFIG = {
   apiKey: "AIzaSyBaqROPsywPgtKjQU7cs1ke1WaqDFhWwn0",
   authDomain: "sistema-gw-36566.firebaseapp.com",
@@ -17,8 +22,13 @@ let garconeteApp = null;
 let garconeteFunctions = null;
 let garconeteHistorico = [];
 let garconeteReconhecimento = null;
-let garconeteOuvindo = false;
-let garconeteProcessando = false;
+let garconeteInputOculto = null;
+
+let garconeteAtiva = false; // sessão em andamento (bloqueia cliques nas telas)
+let garconeteOuvindo = false; // reconhecimento de voz nativo escutando de verdade
+let garconeteProcessando = false; // esperando resposta da Cloud Function
+let garconeteAguardandoToqueDitado = false; // iPhone: vez do cliente, precisa tocar pra abrir o teclado
+let garconeteInterrompida = false; // cliente tocou pra falar antes dela terminar a fala
 
 function inicializarGarconete() {
   if (garconeteApp) return;
@@ -30,10 +40,10 @@ function inicializarGarconete() {
 // motor Chromium (Chrome/Edge/Android WebView) — no iOS, TODO navegador usa
 // o motor da Apple (WebKit) por baixo, que nunca implementou essa API pra
 // páginas web (só apps nativos, como o app do Claude/ChatGPT, têm acesso ao
-// ditado nativo da Apple). Por isso, no iPhone caímos pro modo de texto:
-// o cliente digita ou usa o microfone do PRÓPRIO teclado do iOS (o ícone ao
-// lado da barra de espaço), que dita direto no campo — funciona em
-// qualquer navegador porque é um recurso do sistema, não da página.
+// ditado nativo da Apple). Por isso, no iPhone caímos pro teclado do
+// próprio sistema: focar um campo (mesmo invisível) abre o teclado com o
+// microfone de ditado nativo — funciona em qualquer navegador porque é um
+// recurso do sistema, não da página.
 function suportaReconhecimentoDeVoz() {
   return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
@@ -164,86 +174,121 @@ function executarToolGarconete(nome, input) {
   }
 }
 
-/* ---------------- UI da garçonete (overlay flutuante por cima do wizard) ---------------- */
+/* ---------------- UI: só o robozinho flutuante ---------------- */
+
+// Enquanto ativa, ninguém clica em mais nada além do robozinho — o pedido
+// segue só por voz, e o cliente usa as telas apenas pra acompanhar.
+function definirBloqueioDeCliques(ativo) {
+  document.body.classList.toggle("garconete-modo-assistente", ativo);
+}
+
+function atualizarFabGarconete() {
+  const fab = document.getElementById("fab-garconete");
+  if (!fab) return;
+  fab.classList.remove("ativa", "ouvindo", "pensando");
+
+  if (!garconeteAtiva) {
+    fab.innerHTML = `<span class="fab-garconete-robo">🤖</span><span class="fab-garconete-laco">🎀</span>`;
+    return;
+  }
+  if (garconeteProcessando) fab.classList.add("pensando");
+
+  if (garconeteOuvindo || garconeteAguardandoToqueDitado) {
+    fab.classList.add("ouvindo");
+    fab.innerHTML = `<span class="fab-garconete-robo">🎤</span><span class="fab-garconete-laco">🎀</span>`;
+  } else {
+    fab.classList.add("ativa");
+    fab.innerHTML = `<span class="fab-garconete-robo">🤖</span><span class="fab-garconete-laco">🎀</span>`;
+  }
+}
 
 function abrirGarconete() {
+  if (garconeteAtiva) return;
   inicializarGarconete();
   carregarVozGarconete();
   garconeteHistorico = [];
-  renderGarconeteOverlay();
-}
-
-function fecharGarconete() {
-  pararEscutaGarconete();
-  if (suportaFalaSintetizada()) window.speechSynthesis.cancel();
-  const overlay = document.getElementById("garconete-overlay");
-  if (overlay) overlay.remove();
-}
-
-// Sem chat escrito de propósito: só a voz da garçonete, um jeito de o
-// cliente responder (mic ou o teclado) e um status de uma linha — a tela
-// do cardápio por trás fica quase toda livre, sem um painel de conversa
-// ocupando espaço.
-function renderGarconeteOverlay() {
-  if (document.getElementById("garconete-overlay")) return;
-  const comReconhecimentoNativo = suportaReconhecimentoDeVoz();
-
-  const div = document.createElement("div");
-  div.id = "garconete-overlay";
-  div.className = "garconete-overlay";
-  div.innerHTML = `
-    <button class="garconete-fechar" onclick="fecharGarconete()">✕</button>
-    <div class="garconete-status" id="garconete-status">${comReconhecimentoNativo ? "Toque no microfone e fale seu pedido" : "Toque no 🎤 do teclado e fale, ou digite seu pedido"}</div>
-    ${comReconhecimentoNativo ? `
-      <button class="garconete-mic" id="garconete-mic-btn" onclick="alternarEscutaGarconete()">
-        <span class="garconete-mic-robo">🤖</span>
-        <span class="garconete-mic-laco">🎀</span>
-      </button>
-    ` : `
-      <div class="garconete-input-linha">
-        <input type="text" id="garconete-input-texto" class="garconete-input-texto" placeholder="Toque aqui e use o microfone do teclado..." autocomplete="off" />
-        <button class="garconete-btn-enviar" id="garconete-btn-enviar" onclick="enviarTextoGarconete()">➤</button>
-      </div>
-    `}
-  `;
-  document.body.appendChild(div);
+  garconeteAtiva = true;
+  definirBloqueioDeCliques(true);
+  atualizarFabGarconete();
 
   const saudacao = clienteNome
     ? `Oi, ${clienteNome.split(" ")[0]}! Sou a garçonete virtual da Nativa. O que você vai querer hoje?`
     : "Oi! Sou a garçonete virtual da Nativa. O que você vai querer hoje?";
   falarEDepoisOuvirGarconete(saudacao);
+}
 
-  if (!comReconhecimentoNativo) {
-    const input = document.getElementById("garconete-input-texto");
-    if (input) {
-      input.focus();
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") enviarTextoGarconete();
-      });
+function fecharGarconete() {
+  garconeteAtiva = false;
+  garconeteAguardandoToqueDitado = false;
+  garconeteInterrompida = false;
+  pararEscutaGarconete();
+  if (suportaFalaSintetizada()) window.speechSynthesis.cancel();
+  definirBloqueioDeCliques(false);
+  atualizarFabGarconete();
+}
+
+// Toque curto no robozinho — sempre significa "quero falar agora": inicia a
+// sessão se ainda não começou, ou interrompe a fala dela e já abre o jeito
+// do cliente responder (mic nativo ou teclado, dependendo do aparelho).
+function tocarFabGarconete() {
+  if (!garconeteAtiva) {
+    abrirGarconete();
+    return;
+  }
+  if (garconeteProcessando) return;
+
+  if (suportaReconhecimentoDeVoz()) {
+    if (garconeteOuvindo) {
+      pararEscutaGarconete();
+    } else {
+      garconeteInterrompida = true;
+      if (suportaFalaSintetizada()) window.speechSynthesis.cancel();
+      iniciarEscutaGarconete();
     }
+    return;
+  }
+
+  garconeteInterrompida = true;
+  if (suportaFalaSintetizada()) window.speechSynthesis.cancel();
+  garconeteAguardandoToqueDitado = true;
+  atualizarFabGarconete();
+  abrirTecladoDitadoGarconete();
+}
+
+// Pressionar e segurar encerra a garçonete a qualquer momento — é a única
+// forma de sair, já que não existe mais um botão de fechar visível.
+let garconeteToqueLongoTimer = null;
+function iniciarDeteccaoToqueLongo() {
+  garconeteToqueLongoTimer = setTimeout(() => {
+    garconeteToqueLongoTimer = null;
+    fecharGarconete();
+  }, 550);
+}
+function finalizarToque() {
+  if (garconeteToqueLongoTimer) {
+    clearTimeout(garconeteToqueLongoTimer);
+    garconeteToqueLongoTimer = null;
+    tocarFabGarconete();
+  }
+}
+function cancelarDeteccaoToqueLongo() {
+  if (garconeteToqueLongoTimer) {
+    clearTimeout(garconeteToqueLongoTimer);
+    garconeteToqueLongoTimer = null;
   }
 }
 
-function enviarTextoGarconete() {
-  if (garconeteProcessando) return;
-  const input = document.getElementById("garconete-input-texto");
-  if (!input) return;
-  const texto = input.value.trim();
-  if (!texto) return;
-  input.value = "";
-  processarFalaGarconete(texto);
-}
+(function conectarFabGarconete() {
+  const fab = document.getElementById("fab-garconete");
+  if (!fab) return;
+  fab.addEventListener("contextmenu", (e) => e.preventDefault());
+  fab.addEventListener("pointerdown", iniciarDeteccaoToqueLongo);
+  fab.addEventListener("pointerup", finalizarToque);
+  fab.addEventListener("pointerleave", cancelarDeteccaoToqueLongo);
+  fab.addEventListener("pointercancel", cancelarDeteccaoToqueLongo);
+})();
 
-function atualizarStatusGarconete(texto) {
-  const el = document.getElementById("garconete-status");
-  if (el) el.textContent = texto;
-}
-
-function alternarEscutaGarconete() {
-  if (garconeteProcessando) return;
-  if (garconeteOuvindo) pararEscutaGarconete();
-  else iniciarEscutaGarconete();
-}
+/* ---------------- Reconhecimento de voz nativo (Android/Chrome) ---------------- */
 
 function iniciarEscutaGarconete() {
   const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -254,23 +299,18 @@ function iniciarEscutaGarconete() {
 
   garconeteReconhecimento.onstart = () => {
     garconeteOuvindo = true;
-    const btn = document.getElementById("garconete-mic-btn");
-    if (btn) btn.classList.add("ouvindo");
-    atualizarStatusGarconete("Ouvindo...");
+    atualizarFabGarconete();
   };
 
   garconeteReconhecimento.onresult = (event) => {
     processarFalaGarconete(event.results[0][0].transcript);
   };
 
-  garconeteReconhecimento.onerror = () => {
-    atualizarStatusGarconete("Não entendi — toque no microfone pra tentar de novo.");
-  };
+  garconeteReconhecimento.onerror = () => {};
 
   garconeteReconhecimento.onend = () => {
     garconeteOuvindo = false;
-    const btn = document.getElementById("garconete-mic-btn");
-    if (btn) btn.classList.remove("ouvindo");
+    atualizarFabGarconete();
   };
 
   garconeteReconhecimento.start();
@@ -279,6 +319,48 @@ function iniciarEscutaGarconete() {
 function pararEscutaGarconete() {
   if (garconeteReconhecimento) garconeteReconhecimento.stop();
 }
+
+/* ---------------- Teclado nativo do iPhone (sem Web Speech API) ---------------- */
+
+// Input 100% invisível — existe só pra focar e abrir o teclado do sistema
+// (com o microfone de ditado nativo). O cliente nunca vê essa caixa.
+function obterInputOcultoGarconete() {
+  if (garconeteInputOculto) return garconeteInputOculto;
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.id = "garconete-input-oculto";
+  input.className = "garconete-input-oculto";
+  input.autocomplete = "off";
+  document.body.appendChild(input);
+
+  const processar = () => {
+    const texto = input.value.trim();
+    input.value = "";
+    if (!garconeteAguardandoToqueDitado) return;
+    garconeteAguardandoToqueDitado = false;
+    atualizarFabGarconete();
+    if (texto) processarFalaGarconete(texto);
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      processar();
+      input.blur();
+    }
+  });
+  input.addEventListener("blur", processar);
+
+  garconeteInputOculto = input;
+  return input;
+}
+
+function abrirTecladoDitadoGarconete() {
+  obterInputOcultoGarconete().focus();
+}
+
+/* ---------------- Voz da garçonete (síntese de fala) ---------------- */
 
 // Nomes de vozes em português conhecidas por soarem melhor que a voz
 // robótica padrão de cada plataforma — em ordem de preferência. "Luciana" é
@@ -334,29 +416,28 @@ function falarGarconete(texto) {
   });
 }
 
-// Depois que a garçonete termina de falar, já liga o microfone sozinha —
-// só faz sentido onde existe reconhecimento de voz nativo (Android/Chrome);
-// no modo texto (iPhone) o cliente ainda precisa tocar no microfone do
-// próprio teclado, que a página não tem como acionar sozinha.
+// Depois que a garçonete termina de falar, passa a vez pro cliente: no modo
+// com reconhecimento nativo já liga o microfone sozinha; no iPhone só troca
+// o ícone pra microfone (o cliente ainda precisa tocar uma vez pra abrir o
+// teclado — a Apple não deixa abrir sozinho sem um toque direto).
 async function falarEDepoisOuvirGarconete(texto) {
   await falarGarconete(texto);
-  const painelAindaAberto = !!document.getElementById("garconete-overlay");
-  if (painelAindaAberto && suportaReconhecimentoDeVoz() && !garconeteOuvindo && !garconeteProcessando) {
-    iniciarEscutaGarconete();
+
+  if (garconeteInterrompida) {
+    garconeteInterrompida = false;
+    return;
   }
+  if (!garconeteAtiva) return;
+
+  if (suportaReconhecimentoDeVoz()) {
+    if (!garconeteOuvindo && !garconeteProcessando) iniciarEscutaGarconete();
+  } else {
+    garconeteAguardandoToqueDitado = true;
+  }
+  atualizarFabGarconete();
 }
 
-// Desabilita/reabilita o controle de entrada certo (botão de microfone ou
-// campo de texto + botão enviar), dependendo de qual modo está ativo.
-function definirControlesGarconeteHabilitados(habilitado) {
-  const micBtn = document.getElementById("garconete-mic-btn");
-  if (micBtn) micBtn.disabled = !habilitado;
-  const input = document.getElementById("garconete-input-texto");
-  if (input) input.disabled = !habilitado;
-  const enviarBtn = document.getElementById("garconete-btn-enviar");
-  if (enviarBtn) enviarBtn.disabled = !habilitado;
-  if (habilitado && input) input.focus();
-}
+/* ---------------- Conversa com o backend ---------------- */
 
 // Uma "fala do cliente" pode virar várias chamadas à Cloud Function em
 // sequência quando o Claude pede tool_use — cada tool é executada aqui no
@@ -364,12 +445,13 @@ function definirControlesGarconeteHabilitados(habilitado) {
 // tool_result na rodada seguinte, até a resposta final em texto.
 async function processarFalaGarconete(mensagemInicial) {
   garconeteProcessando = true;
-  atualizarStatusGarconete("Pensando...");
-  definirControlesGarconeteHabilitados(false);
+  atualizarFabGarconete();
+
+  let respostaTexto = "";
+  let erro = false;
 
   try {
     let proximaEntrada = mensagemInicial;
-    let respostaTexto = "";
 
     for (let rodada = 0; rodada < 5; rodada++) {
       const chamar = garconeteFunctions.httpsCallable("agenteGarconeteNativa");
@@ -384,14 +466,13 @@ async function processarFalaGarconete(mensagemInicial) {
       garconeteHistorico.push({ role: "assistant", content });
 
       if (stop_reason === "tool_use") {
-        const toolResults = (content || [])
+        proximaEntrada = (content || [])
           .filter(b => b.type === "tool_use")
           .map(b => ({
             type: "tool_result",
             tool_use_id: b.id,
             content: JSON.stringify(executarToolGarconete(b.name, b.input || {}))
           }));
-        proximaEntrada = toolResults;
         continue;
       }
 
@@ -399,19 +480,19 @@ async function processarFalaGarconete(mensagemInicial) {
       respostaTexto = textBlock ? textBlock.text : "";
       break;
     }
-
-    const statusPronto = suportaReconhecimentoDeVoz() ? "Toque no microfone pra responder" : "Digite ou dite sua resposta";
-    if (respostaTexto) {
-      atualizarStatusGarconete(statusPronto);
-      await falarEDepoisOuvirGarconete(respostaTexto);
-    } else {
-      atualizarStatusGarconete(statusPronto);
-    }
   } catch (e) {
-    atualizarStatusGarconete(suportaReconhecimentoDeVoz() ? "Toque no microfone pra tentar de novo" : "Tente digitar de novo");
-    await falarEDepoisOuvirGarconete("Desculpa, tive um probleminha aqui. Pode repetir?");
+    erro = true;
   } finally {
     garconeteProcessando = false;
-    definirControlesGarconeteHabilitados(true);
+  }
+
+  if (!garconeteAtiva) return; // fechada enquanto processava
+
+  if (erro) {
+    await falarEDepoisOuvirGarconete("Desculpa, tive um probleminha aqui. Pode repetir?");
+  } else if (respostaTexto) {
+    await falarEDepoisOuvirGarconete(respostaTexto);
+  } else {
+    atualizarFabGarconete();
   }
 }
