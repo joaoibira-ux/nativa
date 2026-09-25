@@ -435,9 +435,13 @@ function falarGarconete(texto) {
 }
 
 // Depois que a garçonete termina de falar, passa a vez pro cliente: no modo
-// com reconhecimento nativo já liga o microfone sozinha; no iPhone só troca
-// o ícone pra microfone (o cliente ainda precisa tocar uma vez pra abrir o
-// teclado — a Apple não deixa abrir sozinho sem um toque direto).
+// com reconhecimento nativo já liga o microfone sozinha. No iPhone tenta
+// abrir o teclado sozinha também — o WebKit às vezes permite reabrir o
+// teclado sem um toque novo se ainda estiver "perto" (em tempo) de uma
+// interação recente do cliente; quando não permite, o foco programático
+// simplesmente não faz nada visível, e o robozinho continua mostrando o
+// microfone esperando o cliente tocar manualmente (o fallback continua
+// funcionando do mesmo jeito de antes).
 async function falarEDepoisOuvirGarconete(texto) {
   await falarGarconete(texto);
 
@@ -449,10 +453,12 @@ async function falarEDepoisOuvirGarconete(texto) {
 
   if (suportaReconhecimentoDeVoz()) {
     if (!garconeteOuvindo && !garconeteProcessando) iniciarEscutaGarconete();
+    atualizarFabGarconete();
   } else {
     garconeteAguardandoToqueDitado = true;
+    atualizarFabGarconete();
+    abrirTecladoDitadoGarconete();
   }
-  atualizarFabGarconete();
 }
 
 /* ---------------- Conversa com o backend ---------------- */
