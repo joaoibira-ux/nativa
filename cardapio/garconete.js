@@ -212,8 +212,8 @@ function abrirGarconete() {
   atualizarFabGarconete();
 
   const saudacao = clienteNome
-    ? `Oi, ${clienteNome.split(" ")[0]}! Sou a garçonete virtual da Nativa. O que você vai querer hoje?`
-    : "Oi! Sou a garçonete virtual da Nativa. O que você vai querer hoje?";
+    ? `Oi, ${clienteNome.split(" ")[0]}! Em que posso ajudar?`
+    : "Oi! Em que posso ajudar?";
   falarEDepoisOuvirGarconete(saudacao);
 }
 
